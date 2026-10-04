@@ -1,4 +1,4 @@
-from speech_coach.metrics import analyze
+from speech_coach.metrics import analyze, speaking_rate
 from speech_coach.words import Word
 
 
@@ -49,3 +49,12 @@ def test_repetition_detected_across_a_filler() -> None:
 def test_repetition_is_case_insensitive() -> None:
     m = analyze(make_words("The", "the", "plan"))
     assert m.repetitions == ["the"]
+
+
+def test_speaking_rate_exluces_pause_time() -> None:
+    # 60 words over 60 s, 30 s of it pausing -> 60 words in 30 s of talking = 120 wpm
+    assert speaking_rate(60, 60.0, 30.0) == 120.0
+
+
+def test_speaking_rate_when_all_pauses_is_zero() -> None:
+    assert speaking_rate(10, 5.0, 5.0) == 0.0
