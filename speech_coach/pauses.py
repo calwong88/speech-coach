@@ -61,7 +61,9 @@ def find_pauses(samples: np.ndarray, sample_rate: int) -> list[Pause]:
             # A quiet stretch just ended. Keep it only if it's long enough
             # and didn't start at frame 0 (that's silence before you spoke).
             if run_start > 0 and (i - run_start) * FRAME_S >= MIN_PAUSE_S:
-                pauses.append(Pause(start=run_start * FRAME_S, end=i * FRAME_S))
+                pauses.append(
+                    Pause(start=round(run_start * FRAME_S, 2), end=round(i * FRAME_S, 2))
+                )
             run_start = None
     # A quiet stretch still open here is trailing silence, not a pause.
     return pauses
