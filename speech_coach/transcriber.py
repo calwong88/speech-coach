@@ -28,14 +28,16 @@ class Transcriber:
     def __init__(self, model_name: str = MODEL_NAME) -> None:
         self._model = WhisperModel(model_name, device="cuda", compute_type="float16")
 
-    def transcribe(self, wav: Path) -> list[Word]:
-        segments, _info = self._model.transcribe(
-            str(wav), 
-            language="en", 
-            word_timestamps=True, 
-            vad_filter=True,
-            vad_parameters={"min_silence_duration_ms": 500}
-        )
+    def transcribe(self, wav: Path, **overrides) -> list[Word]:
+        options = {
+            "language": "en",
+            "word_timestamps": True,
+            "vad_filter": True,
+            "vad_parameters": {"min_silence_duration_ms": 500},
+            "condition_on_previous_text": False  # prevents repetition loops (see experiments/loop_test.py)
+            **overrides,  # later keys win, so an experiement can change any default
+        }
+        segments, _info = self._model.transcribe(str(wav), **options)
         words: list[Word] = []
         for segment in segments:
             for token in segment.words:
