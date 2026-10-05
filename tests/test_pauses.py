@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from speech_coach.pauses import find_pauses
+from speech_coach.pauses import find_pauses, speech_end
 
 RATE = 16_000
 
@@ -35,3 +35,12 @@ def test_leading_and_trailing_silence_ignored() -> None:
 
 def test_pure_silence_has_no_pauses() -> None:
     assert find_pauses(silence(2.0), RATE) == []
+
+
+def test_speech_end_ignores_trailing_silence() -> None:
+    audio = np.concatenate([tone(1.0), silence(1.0)])
+    assert speech_end(audio, RATE) == pytest.approx(1.0, abs=0.05)
+
+
+def test_speech_end_is_none_for_pure_silence() -> None:
+    assert speech_end(silence(1.0), RATE) is None

@@ -29,3 +29,10 @@ def split_token(raw:str) -> list[str]:
             if cleaned:
                 words.append(cleaned)
     return words
+
+
+def drop_words_after(words: list[Word], end_s:float) -> list[Word]:
+    """Drop words that start after the audio has gone quiet: the model invested them."""
+    return [w for w in words if w.start < end_s]
+
+

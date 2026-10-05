@@ -2,9 +2,10 @@ from datetime import datetime
 from pathlib import Path
 
 from speech_coach.metrics import SpeechMetrics, analyze, speaking_rate
-from speech_coach.pauses import LONG_PAUSE_S, Pause, find_pauses, load_audio
+from speech_coach.pauses import LONG_PAUSE_S, Pause, find_pauses, load_audio, speech_end
 from speech_coach.recorder import record_until_enter
 from speech_coach.transcriber import Transcriber
+from speech_coach.words import drop_words_after
 
 RECORDINGS = Path("data/recordings")
 
@@ -32,11 +33,20 @@ def main() -> None:
     wav = RECORDINGS / f"{datetime.now().strftime('%Y-%m-%d_%H%M%S')}.wav"
     record_until_enter(wav)
 
-    words = transcriber.transcribe(wav)
     samples, rate = load_audio(wav)
+    words = transcriber.transcribe(wav)
+
+    end_s = speech_end(samples, rate)
+    if end_s is not None:
+        kept = drop_words_after(words, end_s)
+        dropped = words[len(kept):]
+        if dropped:
+            print(f"\n(Dropped {len(dropped)} word(s) heard after you stopped talking: "
+                  f"{' '.join(w.text for w in dropped)})")
+        words = kept
+
     transcript = " ".join(w.text for w in words)
     print_scorecard(transcript, analyze(words), find_pauses(samples, rate))
-
 
 if __name__ == "__main__":
     main()

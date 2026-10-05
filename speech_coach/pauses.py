@@ -39,22 +39,31 @@ def frame_loudness(samples: np.ndarray, sample_rate: int) -> np.ndarray:
     return np.sqrt(np.mean(frames**2, axis=1))
 
 
-def find_pauses(samples: np.ndarray, sample_rate: int) -> list[Pause]:
+def quiet_frames(samples: np.ndarray, sample_rate: int) -> np.ndarray:
+    """True for each 30 ms frame that's quiet relative to this recording's speech level."""
     loudness = frame_loudness(samples, sample_rate)
     if loudness.size == 0:
-        return []
-
-
+        return np.zeros(0, dtype=bool)
     # Assumes you're speaking for most of the recording, so the 95th percentile
     # is a good estimate of your normal speaking loudness.
     speech_level = np.percentile(loudness, 95)
     if speech_level == 0:
-        return []  # pure silence: no speech means no pauses between speech
-    is_quiet = loudness < speech_level * SILENCE_RATIO
+        return np.zeros(0, dtype=bool)  # pure silence: every frame is quiet
+    return loudness < speech_level * SILENCE_RATIO
 
+
+def speech_end(samples: np.ndarray, sample_rate: int) -> float | None:
+    """Time (s) where the last non-quiet frame ends, or None if there's no speech."""
+    loud = np.flatnonzero(~quiet_frames(samples, sample_rate))
+    if loud.size == 0:
+        return None
+    return round((loud[-1] + 1) * FRAME_S, 2)
+
+
+def find_pauses(samples: np.ndarray, sample_rate: int) -> list[Pause]:
     pauses: list[Pause] = []
     run_start: int | None = None
-    for i, quiet in enumerate(is_quiet):
+    for i, quiet in enumerate(quiet_frames(samples, sample_rate)):
         if quiet and run_start is None:
             run_start = i  # a quiet stretch begins
         elif not quiet and run_start is not None:
