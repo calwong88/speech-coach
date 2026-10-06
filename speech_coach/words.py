@@ -5,6 +5,8 @@ from dataclasses import dataclass
 # Matches a filler tag like [UM] or [UH]. The outer ( ) makes re.split keep the tags.
 _FILLER_TAG = re.compile(r"(\[(?:UM|UH)\])")
 
+MAX_PATTERN_WORDS = 3  # longest repeating patter we check for
+MAX_REPEATS = 4        # real speech doesn't repeat a short patter 5+ times in a row
 
 @dataclass(frozen=True)
 class Word:
@@ -36,3 +38,32 @@ def drop_words_after(words: list[Word], end_s:float) -> list[Word]:
     return [w for w in words if w.start < end_s]
 
 
+def drop_loops(words: list[Word]) -> tuple[list[Word], list[Word]]:
+    """Split words into (kept, dropped) dropping repetition loops the model invented."""
+    texts = [w.text.lower() for w in words]
+    kept: list[Word] = []
+    dropped: list[Word] = []
+    i = 0
+    while i < len(words):
+        loop_len = _loop_length(texts, i)
+        if loop_len:
+            dropped.extend(words[i : i + loop_len])
+            i += loop_len  # skip the whole loop
+        else:
+            kept.append(words[i])
+            i += 1
+    return kept, dropped
+
+
+def _loop_length(texts: list[str], i: int) -> int:
+    """How many words a loop starting at postition i covers, or 0 if there's no loop."""
+    for size in range(1, MAX_PATTERN_WORDS + 1):
+        pattern = texts[i : i + size]
+        if len(pattern) < size:
+            break  # not enough words left for a pattern this long
+        repeats = 1
+        while texts[i + repeats * size : i + (repeats + 1) * size] == pattern:
+            repeats += 1
+        if repeats > MAX_REPEATS:
+            return repeats * size
+    return 0
