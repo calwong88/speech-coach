@@ -1,0 +1,2 @@
+[tool.ruff.lint]
+extend-select = ["W"]  # also check pycodestyle warnings, e.g. W605 invalid escape sequence

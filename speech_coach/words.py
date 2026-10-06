@@ -3,7 +3,7 @@ import re
 from dataclasses import dataclass
 
 # Matches a filler tag like [UM] or [UH]. The outer ( ) makes re.split keep the tags.
-_FILLER_TAG = re.compile("(\[(?:UM|UH)\])")
+_FILLER_TAG = re.compile(r"(\[(?:UM|UH)\])")
 
 
 @dataclass(frozen=True)
