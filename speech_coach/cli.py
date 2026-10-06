@@ -6,6 +6,7 @@ from speech_coach.pauses import LONG_PAUSE_S, Pause, find_pauses, load_audio, sp
 from speech_coach.recorder import record_until_enter
 from speech_coach.transcriber import Transcriber
 from speech_coach.words import drop_words_after, drop_loops
+from speech_coach.corrections import apply_corrections
 
 RECORDINGS = Path("data/recordings")
 
@@ -50,7 +51,7 @@ def main() -> None:
         print(f"(Removed a repetition loop of {len(looped)} words: "
               f"{' '.join(w.text for w in looped[:6])} ...)")
     
-    transcript = " ".join(w.text for w in words)
+    transcript = apply_corrections(" ".join(w.text for w in words))
     print_scorecard(transcript, analyze(words), find_pauses(samples, rate))
 
 if __name__ == "__main__":

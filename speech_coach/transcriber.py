@@ -34,7 +34,7 @@ class Transcriber:
             "word_timestamps": True,
             "vad_filter": True,
             "vad_parameters": {"min_silence_duration_ms": 500},
-            "condition_on_previous_text": False  # prevents repetition loops (see experiments/loop_test.py)
+            "condition_on_previous_text": False,  # prevents repetition loops (see experiments/loop_test.py)
             **overrides,  # later keys win, so an experiement can change any default
         }
         segments, _info = self._model.transcribe(str(wav), **options)
