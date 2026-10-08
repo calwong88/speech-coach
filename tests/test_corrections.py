@@ -12,3 +12,11 @@ def test_longest_phrase_wins() -> None:
 
 def test_only_whole_words_are_replaced() -> None:
     assert apply_corrections("stop bemoaning it") == "stop bemoaning it"
+
+
+def test_spelled_out_acronyms_are_joined() -> None:
+    assert apply_corrections("the a m l and k y c checks") == "the AML and KYC checks"
+
+
+def test_longer_correction_beats_acronym() -> None:
+    assert apply_corrections("I hold security a i plus") == "I hold SecAI+"

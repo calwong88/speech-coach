@@ -58,3 +58,14 @@ def test_speaking_rate_exluces_pause_time() -> None:
 
 def test_speaking_rate_when_all_pauses_is_zero() -> None:
     assert speaking_rate(10, 5.0, 5.0) == 0.0
+
+
+def test_spelled_out_letters_are_not_repetitions() -> None:
+    m = analyze(make_words("CompTIA", "A", "A", "A", "plus"))
+    assert m.repetitions == []
+
+
+def test_repeated_i_still_counts() -> None:
+    m = analyze(make_words("I", "I", "think"))
+    assert m.repetitions == ["i"]
+

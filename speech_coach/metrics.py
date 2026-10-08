@@ -79,3 +79,13 @@ def speaking_rate(word_count: int, duration_s: float, pause_s: float) -> float:
     """Words per minute while actually talking, with pause time removed."""
     talking_s = duration_s - pause_s
     return _per_minute(word_count, talking_s / 60) if talking_s > 0 else 0.0
+
+
+def _repetitions(spoken: list[str]) -> list[str]:
+    # Pair each word with the next one: [a, b, c] -> (a, b), (b, c).
+    # Repeated single letters are usually a spelled-out acronym ("A A A"), so they 
+    # don't count, except "i": "I, I think" is a real stumble.
+    return[
+        a for a, b in zip(spoken, spoken[1:])
+        if a == b and (len(a) > 1 or a == "i")
+    ]

@@ -18,8 +18,14 @@ CORRECTIONS: dict[str, str] = {
     "security plus": "Security+",
     "still account protector": "Stale Account Detector",
     "anspiring": "aspiring",
+    "i till foundation": "ITIL Foundation",
+    "batca": "FATCA",
+    "socks": "SOX",  # real word, but very unlikely in interview practice (see below)
 }
 
+# Acronyms you say. Their letter-by-letter forms are added automatically: "a m l" -> "AML"
+ACRONYMS = ["AI", "AML", "IAM", "ITIL", "KYC", "MFA", "QI", "SOX", "SSO"]
+CORRECTIONS.update({" ".join(acronym.lower()): acronym for acronym in ACRONYMS})
 
 def apply_corrections(text: str) -> str:
     # Longest phrases first, so "security ai plus" is fixed before "security plus" can match.
