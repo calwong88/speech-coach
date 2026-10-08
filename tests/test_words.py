@@ -50,3 +50,19 @@ def test_pattern_repeated_exactly_max_times_is_kept() -> None:
     assert drop_loops(words)[1] == []
 
 
+def test_word_starting_in_fading_sound_is_dropped() -> None:
+    # Real timestamps from 2026-10-05_222913.wav, where speech ends at 144.42
+    words = [
+        Word("management", 143.9, 144.38),
+        Word("The", 144.38, 144.48),
+        Word("The", 144.48, 144.84),
+    ]
+    assert [w.text for w in drop_words_after(words, 144.42)] == ["management"]
+
+
+def test_short_real_last_word_is_kept() -> None:
+    # "no" starts 0.15 s before the sound ends: enough to be real
+    words = [Word("no", 10.0, 10.2)]
+    assert drop_words_after(words, 10.15) == words
+
+    

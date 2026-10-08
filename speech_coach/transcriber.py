@@ -43,7 +43,9 @@ class Transcriber:
             for token in segment.words:
                 # Pieces split from one token share its timestamps (e.g. "um" + "I").
                 for text in split_token(token.word):
-                    words.append(Word(text=text, start=token.start, end=token.end))
+                    words.append(
+                        Word(text=text, start=token.start, end=float(token.end))
+                    )
         return words
 
 

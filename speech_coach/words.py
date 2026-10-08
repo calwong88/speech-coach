@@ -7,6 +7,8 @@ _FILLER_TAG = re.compile(r"(\[(?:UM|UH)\])")
 
 MAX_PATTERN_WORDS = 3  # longest repeating patter we check for
 MAX_REPEATS = 4        # real speech doesn't repeat a short patter 5+ times in a row
+MIN_WORD_SOUND_S = 0.1  # a real word needs at least this much sound after it starts
+
 
 @dataclass(frozen=True)
 class Word:
@@ -67,3 +69,9 @@ def _loop_length(texts: list[str], i: int) -> int:
         if repeats > MAX_REPEATS:
             return repeats * size
     return 0
+
+
+def drop_words_after(words: list[Word], end_s: float) -> list[Word]:
+    """Drop words that start too late to be real: in the silence after speech ends,
+    or in the last fraction of a second of fading sound."""
+    return [w for w in words if w.start < end_s - MIN_WORD_SOUND_S]
