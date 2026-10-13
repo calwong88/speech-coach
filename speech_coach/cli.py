@@ -2,11 +2,11 @@ from datetime import datetime
 from pathlib import Path
 
 from speech_coach.metrics import SpeechMetrics, analyze, speaking_rate
-from speech_coach.pauses import LONG_PAUSE_S, Pause, find_pauses, load_audio, speech_end
+from speech_coach.pauses import LONG_PAUSE_S, Pause, speech_end
 from speech_coach.recorder import record_until_enter
 from speech_coach.transcriber import Transcriber
 from speech_coach.words import drop_words_after, drop_loops
-from speech_coach.corrections import apply_corrections
+from speech_coach.pipeline import analyze_recording
 
 RECORDINGS = Path("data/recordings")
 
@@ -31,28 +31,18 @@ def main() -> None:
     print("Loading speech model...")
     transcriber = Transcriber()  # fail fast:: load the model before you speak
 
-    wav = RECORDINGS / f"{datetime.now().strftime('%Y-%m-%d_%H%M%S')}.wav"
+    wav = RECORDINGS / f"{datetime.now():%Y-%m-%d_%H%M%S}.wav"
     record_until_enter(wav)
+    result = analyze_recording(wav, transcriber)
 
-    samples, rate = load_audio(wav)
-    words = transcriber.transcribe(wav)
-
-    end_s = speech_end(samples, rate)
-    if end_s is not None:
-        kept = drop_words_after(words, end_s)
-        dropped = words[len(kept):]
-        if dropped:
-            print(f"\n(Dropped {len(dropped)} word(s) heard after you stopped talking: "
-                  f"{' '.join(w.text for w in dropped)})")
-        words = kept
-
-    words, looped = drop_loops(words)
-    if looped:
-        print(f"(Removed a repetition loop of {len(looped)} words: "
-              f"{' '.join(w.text for w in looped[:6])} ...)")
+    if result.dropped_after_speech:
+        late = " ".join(w.text for w in result.dropped_after_speech)
+        print(f"\n(Dropped {len(result.dropped_after_speech)} word(s) heard after you stopped talking: {late})")
+    if result.dropped_loops:
+        loop = " ".join(w.text for w in result.dropped_loops[:6])
+        print(f"(Removed a reptition loop of {len(result.dropped_loops)} words: {loop} ...)")
     
-    transcript = apply_corrections(" ".join(w.text for w in words))
-    print_scorecard(transcript, analyze(words), find_pauses(samples, rate))
+    print_scorecard(result.transcript, result.metrics, result.pauses)
 
 if __name__ == "__main__":
     main()

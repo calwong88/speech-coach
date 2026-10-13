@@ -1,5 +1,6 @@
 """The AI coach: interprets a practice answer. It never measures anything itself."""
 import re
+import ollama
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -100,3 +101,30 @@ def check_quotes(feedback: CoachFeedback, transcript: str) -> list[str]:
     return problems
 
 
+COACH_MODEL = "qwen3:14b"
+KEEP_ALIVE = "30m"  # keep the model in GPU memory between practice answers
+
+
+class Coach:
+    def __init__(self, model: str = COACH_MODEL, think: bool = False) -> None:
+        self.model = model
+        self.think = think
+
+    def warm_up(self) -> None: 
+        """Load the model into GPU memory now, so feedback isn't delayed later."""
+        ollama.generate(model=self.model, prompt="", keep_alive=KEEP_ALIVE)
+
+    def review(
+            self, question: str, transcript: str, m: SpeechMetrics, pauses: list[Pause]
+    ) -> CoachFeedback:
+        response = ollama.chat(
+            model=self.model,
+            messages=build_messages(question, transcript, m, pauses),
+            format=FEEDBACK_SCHEMA, # Ollama forces the output into this shape
+            think=self.think,
+            keep_alive=KEEP_ALIVE,
+            # Consistent feedback without thinking. qwen3's authors advise against
+            # temperature 0 while thinking (it can repeat itself), so use it's defaults.
+            options={} if self.think else {"temperature": 0},
+        )
+        return CoachFeedback.model_validate_json(response.message.content)
