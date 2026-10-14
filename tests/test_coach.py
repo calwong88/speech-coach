@@ -2,11 +2,12 @@ import pytest
 from pydantic import ValidationError
 
 from speech_coach.coach import (
-    SYSTEM_PROMPT, 
-    build_messages, 
-    format_measurements,
+    SYSTEM_PROMPT,
     CoachFeedback,
+    build_messages,
+    check_feedback,
     check_quotes,
+    format_measurements,
 )
 from speech_coach.metrics import SpeechMetrics
 from speech_coach.pauses import Pause
@@ -33,13 +34,17 @@ def test_measurements_contain_the_exact_numbers() -> None:
 
 
 def test_system_rules_come_before_the_answer() -> None:
-    messages = build_messages("Tell me about yourself.", "So um I work at BMO", METRICS, PAUSES)
+    messages = build_messages(
+        "Tell me about yourself.", "So um I work at BMO", METRICS, PAUSES
+    )
     assert [msg["role"] for msg in messages] == ["system", "user"]
     assert messages[0]["content"] == SYSTEM_PROMPT
 
 
 def test_question_and_transcript_are_tagged() -> None:
-    user = build_messages("Why IAM?", "So um I work at BMO", METRICS, PAUSES)[1]["content"]
+    user = build_messages("Why IAM?", "So um I work at BMO", METRICS, PAUSES)[1][
+        "content"
+    ]
     assert "<question>Why IAM?</question>" in user
     assert "<transcript>\nSo um I work at BMO\n</transcript>" in user
 
@@ -74,13 +79,15 @@ def test_real_quotes_pass() -> None:
 
 def test_quotes_tolerate_formatting_differences() -> None:
     # Captials, a period, a curly apostrophe, and the "um" left out: still a real quote
-    feedback = make_feedback(worked_quote="I\u2019m moving into Identity and Access Management.")
+    feedback = make_feedback(
+        worked_quote="I\u2019m moving into Identity and Access Management."
+    )
     assert check_quotes(feedback, TRANSCRIPT) == []
 
 
 def test_invented_quote_is_caught() -> None:
     feedback = make_feedback(original_sentence="I have ten years of IAM experience")
-    problems= check_quotes(feedback, TRANSCRIPT)
+    problems = check_quotes(feedback, TRANSCRIPT)
     assert len(problems) == 1
     assert "original_sentence" in problems[0]
 
@@ -101,3 +108,29 @@ def test_missing_field_is_rejected() -> None:
 def test_empty_field_is_rejected() -> None:
     with pytest.raises(ValidationError):
         make_feedback(fix_next="")
+
+
+def test_overlong_quote_is_flagged() -> None:
+    long_quote = " ".join(["word"] * 31)
+    problems = check_feedback(
+        make_feedback(worked_quote=long_quote), TRANSCRIPT + " " + long_quote
+    )
+    assert any("limit" in p for p in problems)
+
+
+def test_same_sentence_praised_and_rewritten_is_flagged() -> None:
+    same = "So um I work at BMO in private wealth"
+    problems = check_feedback(make_feedback(worked_quote=same), TRANSCRIPT)
+    assert any("same sentence" in p for p in problems)
+
+
+def test_good_feedback_passes_all_checks() -> None:
+    assert check_feedback(make_feedback(), TRANSCRIPT) == []
+
+
+def test_garbled_quote_is_flagged() -> None:
+    garbled = "Microsoft SC-300 Comp T A A A A plus"
+    problems = check_feedback(
+        make_feedback(worked_quote=garbled), TRANSCRIPT + " " + garbled
+    )
+    assert any("garbled" in p for p in problems)

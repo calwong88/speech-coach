@@ -3,6 +3,7 @@
 Applied to text only, never to the Word list: metrics count what was spoken,
 corrections only change how it's written.
 """
+
 import re
 
 # Lowercase phrase as heard -> correct spelling. Add a line when you spot a new mishearing.
@@ -20,12 +21,15 @@ CORRECTIONS: dict[str, str] = {
     "anspiring": "aspiring",
     "i till foundation": "ITIL Foundation",
     "batca": "FATCA",
-    "socks": "SOX",  # real word, but very unlikely in interview practice (see below)
+    "socks": "SOX",  # real word, but very unlikely in interview practice
+    "calvin long": "Calvin Wong",
+    "still account tector": "Stale Account Detector",
 }
 
 # Acronyms you say. Their letter-by-letter forms are added automatically: "a m l" -> "AML"
 ACRONYMS = ["AI", "AML", "IAM", "ITIL", "KYC", "MFA", "QI", "SOX", "SSO"]
 CORRECTIONS.update({" ".join(acronym.lower()): acronym for acronym in ACRONYMS})
+
 
 def apply_corrections(text: str) -> str:
     # Longest phrases first, so "security ai plus" is fixed before "security plus" can match.
