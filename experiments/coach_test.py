@@ -53,7 +53,7 @@ def main() -> None:
             seconds = time.perf_counter() - start
             problems = check_feedback(feedback, analysis.transcript)
             verdict = "PASS" if not problems else f"FAIL {problems}"
-            print(f"\n--- {wav.name}: {seconds:.1f}s | quote check: {verdict}")
+            print(f"\n--- {wav.name}: {seconds:.1f}s | checks: {verdict}")
             print(feedback.model_dump_json(indent=2))
 
 

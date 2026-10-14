@@ -24,6 +24,10 @@ CORRECTIONS: dict[str, str] = {
     "socks": "SOX",  # real word, but very unlikely in interview practice
     "calvin long": "Calvin Wong",
     "still account tector": "Stale Account Detector",
+    "securiti": "Security",
+    "securiti plus": "Security+",
+    "securiti the i plus": "SecAI+",
+    "security the i plus": "SecAI+",
 }
 
 # Acronyms you say. Their letter-by-letter forms are added automatically: "a m l" -> "AML"
