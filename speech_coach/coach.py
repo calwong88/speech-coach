@@ -4,6 +4,7 @@ import re
 
 import ollama
 from pydantic import BaseModel, ConfigDict, Field
+from dataclasses import dataclass
 
 from speech_coach.metrics import VOCAL_FILLERS, SpeechMetrics, speaking_rate
 from speech_coach.pauses import LONG_PAUSE_S, MIN_PAUSE_S, Pause
@@ -116,18 +117,6 @@ def _normalize(text: str) -> str:
     return " ".join(w for w in words if w not in VOCAL_FILLERS)
 
 
-def check_quotes(feedback: CoachFeedback, transcript: str) -> list[str]:
-    """One problem per quote that isn't really in the transcript. Empty list = all good."""
-    spoken = f" {_normalize(transcript)} "
-    problems = []
-    for field in ("worked_quote", "original_sentence"):
-        quote = getattr(feedback, field)
-        normalized = _normalize(quote)
-        if not normalized or f" {normalized} " not in spoken:
-            problems.append(f"{field} is not in the transcript: {quote!r}")
-    return problems
-
-
 def _looks_garbled(text: str) -> bool:
     """Three or more one-character words in a row, e.g. "Comp T A A A A plus"."""
     run = 0
@@ -138,6 +127,27 @@ def _looks_garbled(text: str) -> bool:
     return False
 
 
+@dataclass(frozen=True)
+class Problem:
+    field: str    # which feedback field failed, so the app knows what to hide
+    message: str  # human-reasdable reason, also sent back to the model on retry 
+
+    def __str__(self) -> str:
+        return f"{self.field}: {self.message}"
+
+
+def check_quotes(feedback: CoachFeedback, transcript: str) -> list[str]:
+    """One problem per quote that isn't really in the transcript. Empty list = all good."""
+    spoken = f" {_normalize(transcript)} "
+    problems = []
+    for field in ("worked_quote", "original_sentence"):
+        quote = getattr(feedback, field)
+        normalized = _normalize(quote)
+        if not normalized or f" {normalized} " not in spoken:
+            problems.append(Problem(field, f"not in the transcript: {quote!r}"))
+    return problems
+
+
 def check_feedback(feedback: CoachFeedback, transcript: str) -> list[str]:
     """All deterministic checks on the coach's output. Empty list = all good."""
     problems = check_quotes(feedback, transcript)
@@ -146,12 +156,12 @@ def check_feedback(feedback: CoachFeedback, transcript: str) -> list[str]:
         n_words = len(quote.split())
         if n_words > MAX_QUOTE_WORDS:
             problems.append(
-                f"{field} is {n_words} words; the limit is {MAX_QUOTE_WORDS}"
-            )
-        if _looks_garbled(getattr(feedback, field)):
-            problems.append(f"{field} quotes garbled speech recognition: {quote!r}")
+                Problem(field, f"{n_words} words; the limit is {MAX_QUOTE_WORDS}")
+                )
+        if _looks_garbled(quote):
+            problems.append(Problem(field, f"quotes garbled speech recognition: {quote!r}"))
     if _normalize(feedback.worked_quote) == _normalize(feedback.original_sentence):
-        problems.append("worked_quote and original_sentence are the same sentence")
+        problems.append(Problem("original_sentence", "same sentence as worked_quote"))
     return problems
 
 

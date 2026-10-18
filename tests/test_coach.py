@@ -89,7 +89,7 @@ def test_invented_quote_is_caught() -> None:
     feedback = make_feedback(original_sentence="I have ten years of IAM experience")
     problems = check_quotes(feedback, TRANSCRIPT)
     assert len(problems) == 1
-    assert "original_sentence" in problems[0]
+    assert problems[0].field == "original_sentence"
 
 
 def test_partial_word_does_not_count_as_a_quote() -> None:
@@ -115,13 +115,13 @@ def test_overlong_quote_is_flagged() -> None:
     problems = check_feedback(
         make_feedback(worked_quote=long_quote), TRANSCRIPT + " " + long_quote
     )
-    assert any("limit" in p for p in problems)
+    assert any("limit" in p.message for p in problems)
 
 
 def test_same_sentence_praised_and_rewritten_is_flagged() -> None:
     same = "So um I work at BMO in private wealth"
     problems = check_feedback(make_feedback(worked_quote=same), TRANSCRIPT)
-    assert any("same sentence" in p for p in problems)
+    assert any("same sentence" in p.message for p in problems)
 
 
 def test_good_feedback_passes_all_checks() -> None:
@@ -133,4 +133,4 @@ def test_garbled_quote_is_flagged() -> None:
     problems = check_feedback(
         make_feedback(worked_quote=garbled), TRANSCRIPT + " " + garbled
     )
-    assert any("garbled" in p for p in problems)
+    assert any("garbled" in p.message for p in problems)
