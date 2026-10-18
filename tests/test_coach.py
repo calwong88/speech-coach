@@ -4,10 +4,12 @@ from pydantic import ValidationError
 from speech_coach.coach import (
     SYSTEM_PROMPT,
     CoachFeedback,
+    Problem,
     build_messages,
     check_feedback,
     check_quotes,
     format_measurements,
+    retry_message,
 )
 from speech_coach.metrics import SpeechMetrics
 from speech_coach.pauses import Pause
@@ -137,7 +139,9 @@ def test_garbled_quote_is_flagged() -> None:
 
 
 def test_context_is_included_when_given() -> None:
-    user = build_messages("Q?", "hello", METRICS, PAUSES, context="Targeting IAM roles")[1]["content"]
+    user = build_messages(
+        "Q?", "hello", METRICS, PAUSES, context="Targeting IAM roles"
+    )[1]["content"]
     assert user.startswith("<context>Targeting IAM roles</context>")
 
 
@@ -145,3 +149,12 @@ def test_no_context_tag_when_empty() -> None:
     user = build_messages("Q?", "hello", METRICS, PAUSES)[1]["content"]
     assert "<context>" not in user
 
+
+def test_retry_message_lists_each_problem() -> None:
+    problems = [
+        Problem("worked_quote", "47 words; the limit is 30"),
+        Problem("original_sentence", "not in the transcript: 'xyz'"),
+    ]
+    message = retry_message(problems)
+    assert "- worked_quote: 47 words; the limit is 30" in message
+    assert "- original_sentence: not in the transcript: 'xyz'" in message

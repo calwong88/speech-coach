@@ -181,6 +181,13 @@ def check_feedback(feedback: CoachFeedback, transcript: str) -> list[str]:
 COACH_MODEL = "qwen3:14b"
 KEEP_ALIVE = "30m"  # keep the model in GPU memory between practice answers
 
+def retry_message(problems: list[Problem]) -> str:
+    """Tell the model exactly what failed, so the second attempt can fix it."""
+    lines = "\n".join(f"- {problem}" for problem in problems)
+    return (
+        f"Your response had these problems:\n{lines}\n"
+        "Fix them and respond again with the complete JSON."
+    )
 
 class Coach:
     def __init__(self, model: str = COACH_MODEL, think: bool = False) -> None:
@@ -192,11 +199,30 @@ class Coach:
         ollama.generate(model=self.model, prompt="", keep_alive=KEEP_ALIVE)
 
     def review(
-        self, question: str, transcript: str, m: SpeechMetrics, pauses: list[Pause]
-    ) -> CoachFeedback:
+        self,
+        question: str,
+        transcript: str,
+        m: SpeechMetrics,
+        pauses: list[Pause],
+        context: str = "",
+    ) -> tuple[CoachFeedback, list[Problem]]:
+        """Get feedback, retrying once if the checks fail. Returns any problems that remain."""
+        messages = build_messages(question, transcript, m, pauses, context)
+        feedback = self._ask(messages)
+        problems = check_feedback(feedback, transcript)
+        if problems:
+            messages += [
+                {"role": "assistant", "content": feedback.model_dump_json()},
+                {"role": "user", "contetn": retry_message(problems)},
+            ]
+            feedback = self._ask(messages)
+            problems = check_feedback(feedback, transcript)
+        return feedback, problems
+
+    def _ask(self, messages: list[dict[str, str]]) -> CoachFeedback:
         response = ollama.chat(
             model=self.model,
-            messages=build_messages(question, transcript, m, pauses),
+            messages=messages,
             format=FEEDBACK_SCHEMA,  # Ollama forces the output into this shape
             think=self.think,
             keep_alive=KEEP_ALIVE,

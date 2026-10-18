@@ -4,7 +4,7 @@ import subprocess
 import time
 from pathlib import Path
 
-from speech_coach.coach import Coach, check_feedback
+from speech_coach.coach import Coach
 from speech_coach.pipeline import analyze_recording
 from speech_coach.transcriber import Transcriber
 
@@ -41,7 +41,7 @@ def main() -> None:
         for wav, analysis in zip(RECORDINGS, analyses):
             start = time.perf_counter()
             try:
-                feedback = coach.review(
+                feedback, problems = coach.review(
                     QUESTION,
                     analysis.transcript,
                     analysis.metrics,
@@ -51,7 +51,6 @@ def main() -> None:
                 print(f"\n--- {wav.name}: FAILED: {error}")
                 continue
             seconds = time.perf_counter() - start
-            problems = check_feedback(feedback, analysis.transcript)
             verdict = "PASS" if not problems else f"FAIL {problems}"
             print(f"\n--- {wav.name}: {seconds:.1f}s | checks: {verdict}")
             print(feedback.model_dump_json(indent=2))
