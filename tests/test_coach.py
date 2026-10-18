@@ -134,3 +134,14 @@ def test_garbled_quote_is_flagged() -> None:
         make_feedback(worked_quote=garbled), TRANSCRIPT + " " + garbled
     )
     assert any("garbled" in p.message for p in problems)
+
+
+def test_context_is_included_when_given() -> None:
+    user = build_messages("Q?", "hello", METRICS, PAUSES, context="Targeting IAM roles")[1]["content"]
+    assert user.startswith("<context>Targeting IAM roles</context>")
+
+
+def test_no_context_tag_when_empty() -> None:
+    user = build_messages("Q?", "hello", METRICS, PAUSES)[1]["content"]
+    assert "<context>" not in user
+
