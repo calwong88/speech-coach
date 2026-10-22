@@ -28,7 +28,8 @@ Rules:
 - original_sentence: one sentence (under 25 words) copied exactly from the transcript,
   different from worked_quote.
 - improved_sentence: that sentence expressed better, with a clearer point or stronger structure,
-  in the speaker's own voice. Removing filler words alone is not an improvement.
+  in the speaker's own voice. Removing filler words alone is not an improvement. Do not add facts
+  the speaker did not say and the context does not support.
 - next_attempt: a concrete plan for answering this same question again, not generic advice.
 - Be direct and specific, never harsh.
 - The transcript comes from speech recognition and may contain misheard words, garbled

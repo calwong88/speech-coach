@@ -10,6 +10,7 @@ from speech_coach.pipeline import analyze_recording
 from speech_coach.recorder import record_until_enter
 from speech_coach.transcriber import Transcriber
 from speech_coach.words import drop_loops, drop_words_after
+from speech_coach.history import HISTORY_FILE, append_session, session_record
 
 RECORDINGS = Path("data/recordings")
 DEFAULT_QUESTION = "Tell me about yourself."
@@ -72,7 +73,8 @@ def main() -> None:
     question = input(f"\nQuestion (Enter for '{DEFAULT_QUESTION}'): ").strip() or DEFAULT_QUESTION
     print(f"\nQuestion: {question}")
 
-    wav = RECORDINGS / f"{datetime.now():%Y-%m-%d_%H%M%S}.wav"
+    started = datetime.now()
+    wav = RECORDINGS / f"{started:%Y-%m-%d_%H%M%S}.wav"
     record_until_enter(wav)
     result = analyze_recording(wav, transcriber)
 
@@ -85,16 +87,32 @@ def main() -> None:
 
     print_scorecard(result.transcript, result.metrics, result.pauses)
 
+    feedback: CoachFeedback | None = None
+    problems: list[Problem] = []
     if result.metrics.word_count < MIN_WORDS_FOR_COACHING:
         print(f"\n(Only {result.metrics.word_count} words heard: too short for coaching. "
               "Check your microphone, or give a longer answer.)")
-        return
+    else:
+        print("\nCoach is reviewing your answer...")
+        feedback, problems = coach.review(
+            question, result.transcript, result.metrics, result.pauses, SPEAKER_CONTEXT
+        )
+        print_feedback(feedback, problems)
 
-    print("\nCoach is reviewing your answer...")
-    feedback, problems = coach.review(
-        question, result.transcript, result.metrics, result.pauses, SPEAKER_CONTEXT
-    )
-    print_feedback(feedback, problems)
+    append_session(session_record(
+        when=started,
+        question=question,
+        recording=wav,
+        transcript=result.transcript,
+        metrics=result.metrics,
+        pauses=result.pauses,
+        feedback=feedback,
+        problems=problems,
+        think=coach.think,
+        model=coach.model,
+    ))
+    print(f"\n(Saved to {HISTORY_FILE})")
+
 
 if __name__ == "__main__":
     main()
