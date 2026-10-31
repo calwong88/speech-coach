@@ -179,7 +179,7 @@ def check_feedback(feedback: CoachFeedback, transcript: str) -> list[str]:
     return problems
 
 
-COACH_MODEL = "qwen3:14b"
+COACH_MODEL = "qwen3.5:9b-q4_K_M"
 KEEP_ALIVE = "30m"  # keep the model in GPU memory between practice answers
 
 def retry_message(problems: list[Problem]) -> str:
