@@ -28,6 +28,7 @@ CORRECTIONS: dict[str, str] = {
     "securiti plus": "Security+",
     "securiti the i plus": "SecAI+",
     "security the i plus": "SecAI+",
+    "aml": "AML",
 }
 
 # Acronyms you say. Their letter-by-letter forms are added automatically: "a m l" -> "AML"

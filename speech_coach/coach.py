@@ -190,6 +190,11 @@ def retry_message(problems: list[Problem]) -> str:
         "Fix them and respond again with the complete JSON."
     )
 
+
+class CoachError(Exception):
+    """The coach failed to produce feedback (empty or unusable response)."""
+
+
 class Coach:
     def __init__(self, model: str = COACH_MODEL, think: bool = False) -> None:
         self.model = model
@@ -231,4 +236,8 @@ class Coach:
             # temperature 0 while thinking (it can repeat itself), so use it's defaults.
             options={} if self.think else {"temperature": 0},
         )
-        return CoachFeedback.model_validate_json(response.message.content)
+        content = response.message.content
+        if not content:
+            raise CoachError(f"empty response from the model (done_reason={response.done_reason})")
+        return CoachFeedback.model_validate_json(content)
+

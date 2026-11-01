@@ -63,10 +63,14 @@ def practice_once(
         )
     else:
         print("\nCoach is reviewing your answer...")
-        feedback, problems = coach.review(
-            question, result.transcript, result.metrics, result.pauses, SPEAKER_CONTEXT
-        )
-        print_feedback(feedback, problems)
+        try:
+            feedback, problems = coach.review(
+                question, result.transcript, result.metrics, result.pauses, SPEAKER_CONTEXT
+            )
+        except Exception as error:  # the coach is optional: report it, keep the session
+            print(f"\n(The coach couldn't give feedback this time: {error})")
+        else:
+            print_feedback(feedback, problems)
 
     append_session(
         session_record(
