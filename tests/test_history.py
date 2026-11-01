@@ -8,24 +8,28 @@ from speech_coach.pauses import Pause
 
 METRICS = SpeechMetrics(30.0, 60, 120.0, 2, 4.0, {"um": 2}, {}, [])
 FEEDBACK = CoachFeedback(
-    worked_quote="a", worked_why="b", fix_next="c",
-    original_sentence="d", improved_sentence="e", next_attempt="f",
+    worked_quote="a",
+    worked_why="b",
+    fix_next="c",
+    original_sentence="d",
+    improved_sentence="e",
+    next_attempt="f",
 )
 
 
 def make_record(**changes) -> dict:
-    fields = dict(
-        when=datetime(2026, 10, 19, 21, 30),
-        question="Why IAM?",
-        recording=Path("data/recordings/x.wav"),
-        transcript="hello",
-        metrics=METRICS,
-        pauses=[Pause(1.0, 3.5)],
-        feedback=FEEDBACK,
-        problems=[],
-        think=False,
-        model="qwen3:14b",
-    )
+    fields = {
+        "when": datetime(2026, 10, 19, 21, 30),
+        "question": "Why IAM?",
+        "recording": Path("data/recordings/x.wav"),
+        "transcript": "hello",
+        "metrics": METRICS,
+        "pauses": [Pause(1.0, 3.5)],
+        "feedback": FEEDBACK,
+        "problems": [],
+        "think": False,
+        "model": "qwen3:14b",
+    }
     return session_record(**(fields | changes))
 
 

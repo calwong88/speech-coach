@@ -3,6 +3,7 @@ import threading
 from datetime import datetime
 from pathlib import Path
 
+from speech_coach.annotate import LEGEND
 from speech_coach.coach import Coach, CoachFeedback, Problem
 from speech_coach.compare import AttemptStats, attempt_stats, comparison_table
 from speech_coach.history import HISTORY_FILE, append_session, session_record
@@ -50,7 +51,7 @@ def practice_once(
             f"(Removed a repetition loop of {len(result.dropped_loops)} words: {loop} ...)"
         )
 
-    print_scorecard(result.transcript, result.metrics, result.pauses)
+    print_scorecard(result.annotated, result.metrics, result.pauses)
 
     too_short = result.metrics.word_count < MIN_WORDS_FOR_COACHING
     feedback: CoachFeedback | None = None
@@ -90,6 +91,7 @@ def print_scorecard(transcript: str, m: SpeechMetrics, pauses: list[Pause]) -> N
     long_pauses = [p for p in pauses if p.duration >= LONG_PAUSE_S]
     print("\n=== Transcript ===")
     print(transcript)
+    print(LEGEND)
     print("\n=== Scorecard ===")
     print(f"Duration:          {m.duration_s:.1f} s")
     print(

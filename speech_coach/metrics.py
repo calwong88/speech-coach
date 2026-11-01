@@ -70,9 +70,15 @@ def _count_phrases(tokens: list[str], phrases: list[tuple[str, ... ]]) -> Counte
     return counts
 
 
+def is_repetition(previous: str, word: str) -> bool:
+    """The same word twice in a row. Repeated single letters are usually a
+    spelled-out acronym ("A A A"), so they don't count, except "i"."""
+    return word == previous and (len(word) > 1 or word == "i")
+
+
 def _repetitions(spoken: list[str]) -> list[str]:
     # Pair each word with the next one: [a, b, c] -> (a,b), (b, c)
-    return [a for a, b in zip(spoken, spoken[1:]) if a == b]
+    return [a for a, b in zip(spoken, spoken[1:]) if is_repetition(a, b)]
 
 
 def speaking_rate(word_count: int, duration_s: float, pause_s: float) -> float:
