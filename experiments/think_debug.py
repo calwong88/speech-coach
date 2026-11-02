@@ -19,7 +19,7 @@ MODELS = ["qwen3:14b", "qwen3.5:9b-q4_K_M"]
 
 
 def main() -> None:
-    wav = sorted(Path("data/recordings").glob("*.wav"))[-1]
+    wav = max(Path("data/recordings").glob("*.wav"))
     analysis = analyze_recording(wav, Transcriber())
     messages = build_messages(QUESTION, analysis.transcript, analysis.metrics, analysis.pauses)
     print("recording", wav.name)

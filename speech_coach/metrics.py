@@ -5,6 +5,7 @@ tracked over time and tested exactly.
 """
 from collections import Counter
 from dataclasses import dataclass
+from itertools import pairwise
 
 from speech_coach.words import Word
 
@@ -81,7 +82,7 @@ def is_repetition(previous: str, word: str) -> bool:
 
 def _repetitions(spoken: list[str]) -> list[str]:
     # Pair each word with the next one: [a, b, c] -> (a,b), (b, c)
-    return [a for a, b in zip(spoken, spoken[1:]) if is_repetition(a, b)]
+    return [a for a, b in pairwise(spoken) if is_repetition(a, b)]
 
 
 def speaking_rate(word_count: int, duration_s: float, pause_s: float) -> float:
@@ -92,9 +93,9 @@ def speaking_rate(word_count: int, duration_s: float, pause_s: float) -> float:
 
 def _repetitions(spoken: list[str]) -> list[str]:
     # Pair each word with the next one: [a, b, c] -> (a, b), (b, c).
-    # Repeated single letters are usually a spelled-out acronym ("A A A"), so they 
+    # Repeated single letters are usually a spelled-out acronym ("A A A"), so they
     # don't count, except "i": "I, I think" is a real stumble.
     return[
-        a for a, b in zip(spoken, spoken[1:])
+        a for a, b in pairwise(spoken)
         if a == b and (len(a) > 1 or a == "i")
     ]
