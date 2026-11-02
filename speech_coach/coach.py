@@ -179,8 +179,11 @@ def check_feedback(feedback: CoachFeedback, transcript: str) -> list[str]:
     return problems
 
 
-COACH_MODEL = "qwen3.5:9b-q4_K_M"
+COACH_MODEL = "qwen3:14b"
 KEEP_ALIVE = "30m"  # keep the model in GPU memory between practice answers
+NUM_CTX = 6144      # prompt(~700 tokens) + thinking + JSON must fit; Ollama's default is 4096
+NUM_PREDICT = 4096  # cap the output so runaway thinking stops, rather than running for minutes
+
 
 def retry_message(problems: list[Problem]) -> str:
     """Tell the model exactly what failed, so the second attempt can fix it."""
@@ -200,9 +203,17 @@ class Coach:
         self.model = model
         self.think = think
 
+
+    def _options(self) -> dict:
+        options = {"num_ctx": NUM_CTX, "num_predict": NUM_PREDICT}
+        if not self.think:
+            options["temperature"] = 0 # consistent feedback; qwen3 advises against this while thinking
+        return options
+
+
     def warm_up(self) -> None:
         """Load the model into GPU memory now, so feedback isn't delayed later."""
-        ollama.generate(model=self.model, prompt="", keep_alive=KEEP_ALIVE)
+        ollama.generate(model=self.model, prompt="", keep_alive=KEEP_ALIVE, options=self._options())
 
     def review(
         self,
@@ -234,7 +245,7 @@ class Coach:
             keep_alive=KEEP_ALIVE,
             # Consistent feedback without thinking. qwen3's authors advise against
             # temperature 0 while thinking (it can repeat itself), so use it's defaults.
-            options={} if self.think else {"temperature": 0},
+            options=self._options(),
         )
         content = response.message.content
         if not content:
