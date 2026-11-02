@@ -69,3 +69,9 @@ def test_repeated_i_still_counts() -> None:
     m = analyze(make_words("I", "I", "think"))
     assert m.repetitions == ["i"]
 
+
+def test_duration_from_audio_overrides_word_span() -> None:
+    # 60 words whose timestamps span 30 s, but the audio says the answer lasted 60 s
+    m = analyze(make_words(*[f"w{i}" for i in range(60)]), duration_s=60.0)
+    assert m.words_per_minute == 60.0
+

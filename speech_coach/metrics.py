@@ -34,7 +34,9 @@ class SpeechMetrics:
     repetitions: list[str]            # e.g. ["i'm"] for "I'm, I'm"
 
 
-def analyze(words: list[Word]) -> SpeechMetrics:
+def analyze(words: list[Word], duration_s: float | None = None) -> SpeechMetrics:
+    """Measure a transcript. Pass duration_s (from the audio) when you have it;
+    otherwise the span from the first to the last word is used."""
     if not words:
         return SpeechMetrics(0.0, 0, 0.0, 0, 0.0, {}, {}, [])
 
@@ -43,7 +45,8 @@ def analyze(words: list[Word]) -> SpeechMetrics:
     fillers = Counter(t for t in tokens if t in VOCAL_FILLERS)
     filler_count = sum(fillers.values())
 
-    duration_s = words[-1].end - words[0].start
+    if duration_s is None:
+        duration_s = words[-1].end - words[0].start
     minutes = duration_s / 60
 
     return SpeechMetrics(

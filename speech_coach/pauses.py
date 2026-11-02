@@ -52,12 +52,18 @@ def quiet_frames(samples: np.ndarray, sample_rate: int) -> np.ndarray:
     return loudness < speech_level * SILENCE_RATIO
 
 
-def speech_end(samples: np.ndarray, sample_rate: int) -> float | None:
-    """Time (s) where the last non-quiet frame ends, or None if there's no speech."""
+def speech_span(samples: np.ndarray, sample_rate: int) -> tuple[float, float] | None:
+    """(start, end) in seconds, from the fist to the last non-quiet frame. None if silent."""
     loud = np.flatnonzero(~quiet_frames(samples, sample_rate))
     if loud.size == 0:
         return None
-    return round((loud[-1] + 1) * FRAME_S, 2)
+    return round(loud[0] * FRAME_S, 2), round((loud[-1] + 1) * FRAME_S, 2)
+
+
+def speech_end(samples: np.ndarray, sample_rate: int) -> float | None:
+    """Time (s) where the last non-quiet frame ends, or None if there's no speech."""
+    span = speech_span(samples, sample_rate)
+    return None if span is None else span[1]
 
 
 def find_pauses(samples: np.ndarray, sample_rate: int) -> list[Pause]:

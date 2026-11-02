@@ -102,7 +102,8 @@ def print_scorecard(transcript: str, m: SpeechMetrics, pauses: list[Pause]) -> N
         f"Pace:              {m.words_per_minute:.0f} words/minute ({m.word_count} words)"
     )
     pause_s = sum(p.duration for p in pauses)
-    print(f"Time pausing:      {pause_s:.1f} s of {m.duration_s:.1f} s")
+    pause_pct = pause_s / m.duration_s if m.duration_s else 0
+    print(f"Time pausing:      {pause_s:.1f} s of {m.duration_s:.1f} s ({pause_pct:.0%})")
     print(
         f"Speaking rate:     {speaking_rate(m.word_count, m.duration_s, pause_s):.0f} words/minute (pauses removed)"
     )
