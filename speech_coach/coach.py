@@ -9,6 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from speech_coach.metrics import VOCAL_FILLERS, SpeechMetrics, speaking_rate
 from speech_coach.pauses import LONG_PAUSE_S, MIN_PAUSE_S, Pause
 
+PROMPT_VERSION = 2  # increase whenever SYSTEM_PROPPT or the feedback schema changes
 SYSTEM_PROMPT = """\
 You are a speaking coach helping someone practise spoken answers, such as job interview answers.
 
@@ -20,6 +21,8 @@ how it is structured, how clearly the ideas are expressed, and how they connect.
 
 Rules:
 - Use only the measurements provided. Never count, estimate or calculate anything yourself.
+- main_point: one sentence, in plain words, stating the main point a listener would take away.
+  If the answer has no clear main point, say so directly.
 - Do not choose filler words, pauses or pace as the thing to fix. Mention a measurement only
   to support a point about structure or clarity.
 - worked_quote: a short phrase or one sentence (under 25 words) that genuinely worked,
@@ -30,6 +33,9 @@ Rules:
 - improved_sentence: that sentence expressed better, with a clearer point or stronger structure,
   in the speaker's own voice. Removing filler words alone is not an improvement. Do not add facts
   the speaker did not say and the context does not support.
+- ended_clearly: true if the answer finished with a complete closing thought; false if it 
+  trailed off, stopped mid-sentence or ended on a filler.
+- ending_note: one sentence on how the answer ended and, if needed, how to close it better.
 - next_attempt: a concrete plan for answering this same question again, not generic advice.
 - Be direct and specific, never harsh.
 - The transcript comes from speech recognition and may contain misheard words, garbled
@@ -98,26 +104,20 @@ def build_messages(
 
 
 class CoachFeedback(BaseModel):
-    """The coach's answer. Ollama is forced to return JSON matching this shape."""
+    """The coach's answer. Ollama is forced to return JSON matching this shape.
+    Fields are generated in this order, so the summary comes before the critique."""
 
     model_config = ConfigDict(frozen=True)
 
-    worked_quote: str = Field(
-        min_length=1, description="Exact words from the transcript that worked well"
-    )
+    main_point: str = Field(min_length=1, description="One sentence: the main point a listener would take away")
+    worked_quote: str = Field(min_length=1, description="Exact words from the transcript that worked well")
     worked_why: str = Field(min_length=1, description="Why that part worked")
-    fix_next: str = Field(
-        min_length=1, description="The ONE change that would most improve the answer"
-    )
-    original_sentence: str = Field(
-        min_length=1, description="One sentence copied exactly from the transcript"
-    )
-    improved_sentence: str = Field(
-        min_length=1, description="That sentence rewritten, in the speaker's own voice"
-    )
-    next_attempt: str = Field(
-        min_length=1, description="What to focus on in the next attempt"
-    )
+    fix_next: str = Field(min_length=1, description="The ONE change that would most improve the answer")
+    original_sentence: str = Field(min_length=1, description="One sentence copied exactly from the transcript")
+    improved_sentence: str = Field(min_length=1, description="That sentence rewritten, in the speaker's own voice")
+    ended_clearly: bool = Field(description="True if the answer finished its thought; false if it trailed off")
+    ending_note: str = Field(min_length=1, description="How the answer ended, and how to close it better")
+    next_attempt: str = Field(min_length=1, description="What to focus on in the next attempt")
 
 
 FEEDBACK_SCHEMA = CoachFeedback.model_json_schema()

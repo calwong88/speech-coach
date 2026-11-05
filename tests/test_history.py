@@ -1,18 +1,21 @@
 from datetime import datetime
 from pathlib import Path
 
-from speech_coach.coach import CoachFeedback, Problem
+from speech_coach.coach import PROMPT_VERSION, CoachFeedback, Problem
 from speech_coach.history import append_session, load_history, session_record
 from speech_coach.metrics import SpeechMetrics
 from speech_coach.pauses import Pause
 
 METRICS = SpeechMetrics(30.0, 60, 120.0, 2, 4.0, {"um": 2}, {}, [])
 FEEDBACK = CoachFeedback(
+    main_point="m",
     worked_quote="a",
     worked_why="b",
     fix_next="c",
     original_sentence="d",
     improved_sentence="e",
+    ended_clearly=False,
+    ending_note="g",
     next_attempt="f",
 )
 
@@ -58,3 +61,10 @@ def test_sessions_round_trip_through_the_files(tmp_path: Path) -> None:
 
 def test_missing_history_file_is_empty(tmp_path: Path) -> None:
     assert load_history(tmp_path / "missing.jsonl") == []
+
+
+def test_record_carries_both_version() -> None:
+    record = make_record()
+    assert record["schema_version"] == 2
+    assert record["coach"]["prompt_version"] == PROMPT_VERSION
+

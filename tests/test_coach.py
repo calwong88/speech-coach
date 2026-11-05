@@ -2,6 +2,7 @@ import pytest
 from pydantic import ValidationError
 
 from speech_coach.coach import (
+    FEEDBACK_SCHEMA,
     SYSTEM_PROMPT,
     CoachFeedback,
     Problem,
@@ -65,11 +66,14 @@ TRANSCRIPT = (
 
 def make_feedback(**changes: str) -> CoachFeedback:
     fields = {
+        "main_point": "He is moving from banking into IAM.",
         "worked_quote": "moving into identity and access management",
         "worked_why": "It names your goal.",
         "fix_next": "Lead with the goal.",
         "original_sentence": "So um I work at BMO in private wealth",
         "improved_sentence": "I work in Private Wealth at BMO.",
+        "ended_clearly": True,
+        "ending_note": "Ends on the goal.",
         "next_attempt": "Open with why IAM.",
     }
     return CoachFeedback(**(fields | changes))
@@ -158,3 +162,11 @@ def test_retry_message_lists_each_problem() -> None:
     message = retry_message(problems)
     assert "- worked_quote: 47 words; the limit is 30" in message
     assert "- original_sentence: not in the transcript: 'xyz'" in message
+
+def test_main_point_is_generated_first() -> None:
+    assert list(FEEDBACK_SCHEMA["properties"])[0] == "main_point"
+
+
+def test_ended_clearly_must_be_true_or_false() -> None:
+    with pytest.raises(ValidationError):
+        make_feedback(ended_clearly="maybe")

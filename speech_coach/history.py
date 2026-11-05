@@ -4,12 +4,12 @@ from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
 
-from speech_coach.coach import CoachFeedback, Problem
+from speech_coach.coach import PROMPT_VERSION, CoachFeedback, Problem
 from speech_coach.metrics import SpeechMetrics
 from speech_coach.pauses import LONG_PAUSE_S, Pause
 
 HISTORY_FILE = Path("data/history.jsonl")
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2  # v2: duration from the audio speech span; coach main_point/ending; prompt_version
 
 
 def session_record(
@@ -41,6 +41,7 @@ def session_record(
         "coach": None if feedback is None else {
             "model": model,
             "think": think,
+            "prompt_version": PROMPT_VERSION,
             "feedback": feedback.model_dump(),
             "unverified_fields": sorted({p.field for p in problems}),
         },

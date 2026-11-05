@@ -121,6 +121,7 @@ def print_feedback(feedback: CoachFeedback, problems: list[Problem]) -> None:
     """Show the coach's feedback, hiding any quote that failed verification."""
     failed = {problem.field for problem in problems}
     print("\n=== Coach ===")
+    print(f"Main_point:   {feedback.main_point}")
     if "worked_quote" not in failed:
         print(f'What worked:   "{feedback.worked_quote}"')
         print(f"               {feedback.worked_why}")
@@ -128,6 +129,8 @@ def print_feedback(feedback: CoachFeedback, problems: list[Problem]) -> None:
     if "original_sentence" not in failed:
         print(f'You said:      "{feedback.original_sentence}"')
         print(f'Try:           "{feedback.improved_sentence}"')
+    ending = "finished clearly" if feedback.ended_clearly else "trailing off"
+    print(f"Ending:        {ending} ({feedback.ending_note})")
     print(f"Next attempt: {feedback.next_attempt}")
     if failed:
         print(
