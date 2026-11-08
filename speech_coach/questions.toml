@@ -1,0 +1,52 @@
+# Practice questions by category. target_s = [min, max] answer length in seconds.
+# Leave target_s out for castegories with no target. Add questions freely.
+
+[categories.opener]
+target_s = [60, 90]
+question = [
+    "Tell me about yourself.",
+    "Why do you want to move into IAM?"
+    "Why are you looking to leave your current role?",
+    "Walk me through your résumé.",
+    "Where do you see yourself in three years?",
+]
+
+[categories.behavioural]
+target_s = [90, 120]
+questions = [
+    "Tell me about a time you caught an error that others missed.",
+    "Tell me about a time you had to follow a strict procedure under time pressure.",
+    "Describe a time you disagreed with a colleague or manager.",
+    "Tell me about a time you had to learn something technical quickly.",
+    "Tell me about a mistake you made and what you learned from it.",
+    "Describe a time you explained something complex to a non-technical person.",
+]
+
+[categories.explain]
+target_s = [45, 60]
+questions = [
+    "What is the principle of least privilege, and why does it matter?",
+    "What's the difference between authentication and authorization?",
+    "What is the joiner-mover-leaver process?",
+    "What is MFA, and why is it important?",
+    "How does single sign-on work, in simple terms?",
+    "What is role-based access control?",
+    "What is an access review, and why do companies do them?",
+    "Why do SOX controls care about who has access to what?",
+]
+
+[categories.project]
+target_s = [60, 120]
+questions = [
+    "Walk me through your Stale Account Detector. What does it do, and why does it matter?",
+    "Tell me about a technical problem you solved in your speech coach app.",
+]
+
+[categories.conversation]
+questions = [
+    "What did you do last weekend?",
+    "Describe a game, show or book you've enjoyed, to someone who's never heard of it.",
+    "What's something you've changed your mind about?",
+    "Explain how to make a meal you like.",
+    "What's a goal you're working on this year, and why?",
+]
