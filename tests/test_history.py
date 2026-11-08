@@ -24,6 +24,7 @@ def make_record(**changes) -> dict:
     fields = {
         "when": datetime(2026, 10, 19, 21, 30),
         "question": "Why IAM?",
+        "category": "opener",
         "recording": Path("data/recordings/x.wav"),
         "transcript": "hello",
         "metrics": METRICS,
@@ -65,6 +66,6 @@ def test_missing_history_file_is_empty(tmp_path: Path) -> None:
 
 def test_record_carries_both_version() -> None:
     record = make_record()
-    assert record["schema_version"] == 2
+    assert record["schema_version"] == 3
     assert record["coach"]["prompt_version"] == PROMPT_VERSION
 

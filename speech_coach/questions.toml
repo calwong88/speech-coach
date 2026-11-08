@@ -3,9 +3,9 @@
 
 [categories.opener]
 target_s = [60, 90]
-question = [
+questions = [
     "Tell me about yourself.",
-    "Why do you want to move into IAM?"
+    "Why do you want to move into IAM?",
     "Why are you looking to leave your current role?",
     "Walk me through your résumé.",
     "Where do you see yourself in three years?",

@@ -10,11 +10,11 @@ from speech_coach.history import HISTORY_FILE, append_session, session_record
 from speech_coach.metrics import SpeechMetrics, speaking_rate
 from speech_coach.pauses import LONG_PAUSE_S, Pause
 from speech_coach.pipeline import analyze_recording
+from speech_coach.questions import Question, length_verdict, load_questions, resolve
 from speech_coach.recorder import record_until_enter
 from speech_coach.transcriber import Transcriber
 
 RECORDINGS = Path("data/recordings")
-DEFAULT_QUESTION = "Tell me about yourself."
 SPEAKER_CONTEXT = (
     "Career changer from banking (accounts processing at BMO Private Wealth), "
     "targeting entry-level IAM and cybersecurity roles."
@@ -22,17 +22,20 @@ SPEAKER_CONTEXT = (
 MIN_WORDS_FOR_COACHING = 15  # below this there's nothing real to coach
 
 
-def ask_question() -> str:
-    question = (
-        input(f"\nQuestion (Enter for '{DEFAULT_QUESTION}'):").strip()
-        or DEFAULT_QUESTION
-    )
-    print(f"\nQuestion: {question}")
+def ask_question(bank: list[Question]) -> Question:
+    categories = ", ".join(sorted({q.category for q in bank}))
+    print("\nEnter = 'Tell me about yourself.' | r = random | "
+          f"r <category> ({categories}) | or type your own question.")
+    question = resolve(input("> "), bank)
+    print(f"\nQuestion: {question.category}): {question.text}")
+    if question.target_s:
+        low, high = question.target_s
+        print(f"Target length: {low}-{high} s")
     return question
 
 
 def practice_once(
-    question: str, transcriber: Transcriber, coach: Coach
+    question: Question, transcriber: Transcriber, coach: Coach
 ) -> AttemptStats | None:
     """One attempt: record, analyze, score, coach, save. Returns stats for comparison."""
     started = datetime.now()
@@ -51,7 +54,7 @@ def practice_once(
             f"(Removed a repetition loop of {len(result.dropped_loops)} words: {loop} ...)"
         )
 
-    print_scorecard(result.annotated, result.metrics, result.pauses)
+    print_scorecard(result.annotated, result.metrics, result.pauses, question.target_s)
 
     too_short = result.metrics.word_count < MIN_WORDS_FOR_COACHING
     feedback: CoachFeedback | None = None
@@ -65,7 +68,7 @@ def practice_once(
         print("\nCoach is reviewing your answer...")
         try:
             feedback, problems = coach.review(
-                question, result.transcript, result.metrics, result.pauses, SPEAKER_CONTEXT
+                question.text, result.transcript, result.metrics, result.pauses, SPEAKER_CONTEXT
             )
         except Exception as error:  # noqa: BLE001 (the coach is optional: report and keep the session)
             print(f"\n(The coach couldn't give feedback this time: {error})")
@@ -75,7 +78,8 @@ def practice_once(
     append_session(
         session_record(
             when=started,
-            question=question,
+            question=question.text,
+            category=question.category,
             recording=wav,
             transcript=result.transcript,
             metrics=result.metrics,
@@ -91,13 +95,16 @@ def practice_once(
     return None if too_short else attempt_stats(result.metrics, result.pauses)
 
 
-def print_scorecard(transcript: str, m: SpeechMetrics, pauses: list[Pause]) -> None:
+def print_scorecard(
+        transcript: str, m: SpeechMetrics, pauses: list[Pause], target_s: tuple[int, int] | None = None
+    ) -> None:
     long_pauses = [p for p in pauses if p.duration >= LONG_PAUSE_S]
     print("\n=== Transcript ===")
     print(transcript)
     print(LEGEND)
     print("\n=== Scorecard ===")
-    print(f"Duration:          {m.duration_s:.1f} s")
+    verdict = length_verdict(m.duration_s, target_s)
+    print(f"Duration:          {m.duration_s:.1f} s" + (f" ({verdict})" if verdict else ""))
     print(
         f"Pace:              {m.words_per_minute:.0f} words/minute ({m.word_count} words)"
     )
@@ -150,6 +157,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    bank = load_questions()
 
     print("Loading speech model...")
     transcriber = Transcriber()  # fail fast: load the model before you speak
@@ -159,7 +167,7 @@ def main() -> None:
     threading.Thread(target=coach.warm_up, daemon=True).start()
 
     try:
-        question = ask_question()
+        question = ask_question(bank)
         previous: AttemptStats | None = None
         attempt = 1
         while True:
@@ -178,7 +186,7 @@ def main() -> None:
             if choice == "q":
                 break
             if choice == "n":
-                question = ask_question()
+                question = ask_question(bank)
                 previous, attempt = None, 1
             else:
                 attempt += 1

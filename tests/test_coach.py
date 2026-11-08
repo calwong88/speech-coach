@@ -164,7 +164,7 @@ def test_retry_message_lists_each_problem() -> None:
     assert "- original_sentence: not in the transcript: 'xyz'" in message
 
 def test_main_point_is_generated_first() -> None:
-    assert list(FEEDBACK_SCHEMA["properties"])[0] == "main_point"
+    assert next(iter(FEEDBACK_SCHEMA["properties"])) == "main_point"
 
 
 def test_ended_clearly_must_be_true_or_false() -> None:

@@ -9,13 +9,14 @@ from speech_coach.metrics import SpeechMetrics
 from speech_coach.pauses import LONG_PAUSE_S, Pause
 
 HISTORY_FILE = Path("data/history.jsonl")
-SCHEMA_VERSION = 2  # v2: duration from the audio speech span; coach main_point/ending; prompt_version
+SCHEMA_VERSION = 3  # v3: question category. v2: duration from audio speech span; coach main_point/ending; prompt_version
 
 
 def session_record(
         *,
         when: datetime,
         question: str,
+        category: str,
         recording: Path,
         transcript: str,
         metrics: SpeechMetrics,
@@ -30,6 +31,7 @@ def session_record(
         "schema_version": SCHEMA_VERSION,
         "timestamp": when.isoformat(timespec="seconds"),
         "question": question,
+        "category": category,
         "recording": recording.name,
         "transcript": transcript,
         "metrics": asdict(metrics),
