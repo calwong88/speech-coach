@@ -27,7 +27,7 @@ def ask_question(bank: list[Question]) -> Question:
     print("\nEnter = 'Tell me about yourself.' | r = random | "
           f"r <category> ({categories}) | or type your own question.")
     question = resolve(input("> "), bank)
-    print(f"\nQuestion: {question.category}): {question.text}")
+    print(f"\nQuestion: ({question.category}): {question.text}")
     if question.target_s:
         low, high = question.target_s
         print(f"Target length: {low}-{high} s")
