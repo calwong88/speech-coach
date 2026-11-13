@@ -1,8 +1,13 @@
 import json
 
-from speech_coach.api_coach import ApiCoach
+import pytest
+
 from speech_coach.coach import CoachFeedback
 from speech_coach.metrics import SpeechMetrics
+
+pytest.importorskip("anthropic")  # skip this file where the API SDK can't load (e.g. app control)
+
+from speech_coach.api_coach import ApiCoach  # must come after the skip check
 
 METRICS = SpeechMetrics(30.0, 60, 120.0, 0, 0.0, {}, {}, [])
 FEEDBACK = CoachFeedback(
