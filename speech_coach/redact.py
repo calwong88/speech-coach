@@ -2,7 +2,7 @@
 import re
 
 # Real text -> placeholder. Add anything else you never want to send.
-REDACTIONS = dict[str, str] = {
+REDACTIONS: dict[str, str] = {
     "Calvin Wong": "[NAME]",
     "Calvin": "[Name]",
     "Bank of Montreal": "[EMPLOYER]",

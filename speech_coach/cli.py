@@ -4,6 +4,7 @@ from datetime import datetime
 from pathlib import Path
 
 from speech_coach.annotate import LEGEND
+from speech_coach.api_coach import ApiCoach
 from speech_coach.coach import Coach, CoachFeedback, Problem
 from speech_coach.compare import AttemptStats, attempt_stats, comparison_table
 from speech_coach.history import HISTORY_FILE, append_session, session_record
@@ -152,6 +153,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--think", action="store_true", help="slower, more detailed coaching"
     )
+    parser.add_argument(
+        "--coach",
+        choices=["local", "api"],
+        default="local",
+        help="local (default, private) or api (Claude API; name and employer redacted)",
+    )
     return parser.parse_args()
 
 
@@ -162,7 +169,11 @@ def main() -> None:
     print("Loading speech model...")
     transcriber = Transcriber()  # fail fast: load the model before you speak
 
-    coach = Coach(think=args.think)
+    if args.coach == "api":
+        coach = ApiCoach()
+        print("Coach: Claude API (only redacted text leaves this machine)")
+    else:
+        coach = Coach(think=args.think)
     # Load the coach in the background while you think and speak
     threading.Thread(target=coach.warm_up, daemon=True).start()
 
