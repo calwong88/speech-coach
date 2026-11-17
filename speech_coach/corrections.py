@@ -9,6 +9,7 @@ import re
 # Lowercase phrase as heard -> correct spelling. Add a line when you spot a new mishearing.
 CORRECTIONS: dict[str, str] = {
     "bemo": "BMO",
+    "pimo": "BMO",
     "as see 300": "SC-300",
     "s c 300": "SC-300",
     "sc 300": "SC-300",
