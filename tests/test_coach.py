@@ -4,6 +4,7 @@ from pydantic import ValidationError
 from speech_coach.coach import (
     FEEDBACK_SCHEMA,
     SYSTEM_PROMPT,
+    Coach,
     CoachFeedback,
     Problem,
     build_messages,
@@ -170,3 +171,24 @@ def test_main_point_is_generated_first() -> None:
 def test_ended_clearly_must_be_true_or_false() -> None:
     with pytest.raises(ValidationError):
         make_feedback(ended_clearly="maybe")
+
+class FlakyCoach(Coach):
+    """Gives a failing answer first, then a good one; records what each attempt sent."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.sent: list[list[dict]] = []
+        self.answers = [make_feedback(worked_quote="words I never said"), make_feedback()]
+
+    def _ask(self, messages):
+        self.sent.append([dict(m) for m in messages])  # copy: review() extends the same list
+        return self.answers.pop(0)
+
+
+def test_retry_tells_the_model_what_was_wrong() -> None:
+    coach = FlakyCoach()
+    _, problems = coach.review("Why IAM?", TRANSCRIPT, METRICS, PAUSES)
+    retry_turn = coach.sent[1][-1]
+    assert retry_turn["role"] == "user"
+    assert "worked_quote" in retry_turn["content"]
+    assert problems == []
