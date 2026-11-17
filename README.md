@@ -116,6 +116,7 @@ Each decision below was tested, not assumed. The experiments behind them are in 
  
 13. **Local-first.** Recordings and history live in `data/`, which is excluded from Git.
 14. **Versioned history.** Each session is one line of JSON in `data/history.jsonl`, with a `schema_version` and the coach's `prompt_version`, so sessions recorded under different rules can always be told apart.
+15. **The coach model was chosen by a blind comparison.** Five saved sessions were reviewed by qwen3:14b, qwen3.5:9b and Claude Sonnet, and rated 1–5 without knowing which model wrote which ([`coach_compare.py`](experiments/coach_compare.py)). Claude Sonnet scored 4.4, never rated below either local model on any answer, needed no retries and was fastest (5.5 s); the local models scored 3.4–3.6 and needed retries on 40–60% of reviews. A rushed first rating ranked them differently, so only the careful rating was used. Local remains the default for privacy; Claude is available with `--coach api`, with name and employer redacted.
 ## Setup
  
 **Tested on:** Windows 11, Python 3.12, NVIDIA RTX 5060 Ti (16 GB).
@@ -184,6 +185,7 @@ speech-coach/
 - **The local coach isn't perfect.** It sometimes contradicts itself (praising and criticizing the same sentence) or adds wording you didn't say to a rewrite. The checks catch what can be checked; for the rest, only use a rewrite if it's true for you.
 - **`--think`** is slower, and on long reasoning it can still run out of room. When that happens, the session is still scored and saved.
 - **Platform:** tested only on Windows with an NVIDIA GPU.
+- **Redactions** Redaction catches known spellings; a badly misheard name can slip through. Corrections run first to reduce this.
 ## Roadmap
  
 - [x] **Phase 1, core loop:** record, transcribe, measure, scorecard
