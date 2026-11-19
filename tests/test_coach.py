@@ -2,8 +2,10 @@ import pytest
 from pydantic import ValidationError
 
 from speech_coach.coach import (
+    COACH_MODEL,
     FEEDBACK_SCHEMA,
     SYSTEM_PROMPT,
+    THINK_MODEL,
     Coach,
     CoachFeedback,
     Problem,
@@ -192,3 +194,11 @@ def test_retry_tells_the_model_what_was_wrong() -> None:
     assert retry_turn["role"] == "user"
     assert "worked_quote" in retry_turn["content"]
     assert problems == []
+
+
+def test_default_coach_uses_the_comparison_winner() -> None:
+    assert Coach().model == COACH_MODEL
+
+
+def test_thinking_uses_the_model_that_can_finish() -> None:
+    assert Coach(think=True).model == THINK_MODEL

@@ -181,8 +181,8 @@ def check_feedback(feedback: CoachFeedback, transcript: str) -> list[Problem]:
         problems.append(Problem("original_sentence", "same sentence as worked_quote"))
     return problems
 
-
-COACH_MODEL = "qwen3:14b"
+COACH_MODEL = "qwen3.5:9b-q4_K_M" # default: rated above qwen3:14b in two blind comparisons
+THINK_MODEL = "qwen3:14b"         # for --think: qwen3.5:9b's thinking overruns its token limit
 KEEP_ALIVE = "30m"  # keep the model in GPU memory between practice answers
 NUM_CTX = 6144      # prompt(~700 tokens) + thinking + JSON must fit; Ollama's default is 4096
 NUM_PREDICT = 4096  # cap the output so runaway thinking stops, rather than running for minutes
@@ -202,9 +202,9 @@ class CoachError(Exception):
 
 
 class Coach:
-    def __init__(self, model: str = COACH_MODEL, think: bool = False) -> None:
-        self.model = model
+    def __init__(self, model: str | None = None, think: bool = False) -> None:
         self.think = think
+        self.model = model or (THINK_MODEL if think else COACH_MODEL)
 
 
     def _options(self) -> dict:
