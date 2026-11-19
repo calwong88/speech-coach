@@ -212,6 +212,7 @@ speech-coach/
 - [x] **Phase 1, core loop:** record, transcribe, measure, scorecard
 - [x] **Phase 2, AI coach:** verified feedback with main point and ending, practice loop with attempt comparison, annotated transcript, question bank with target lengths, versioned history
 - [x] **Coach model comparison:** local models vs. Claude on the same saved sessions, rated blind; opt-in Claude coach with redaction
+- [ ] **More coach candidates:** test gpt-oss:20b as a local coach in the blind comparison (low reasoning effort; check it fits in GPU memory alongside the speech model), and add the OpenAI API as a second opt-in cloud coach, with redaction moved into a shared base class so every cloud coach redacts automatically
 - [ ] **Phase 3, web app:** browser UI usable from a phone, progress charts from the history
 - [ ] **Phase 4, habit system:** daily practice prompts as phone notifications, streaks
 - [ ] **Phase 5, conversation mode:** a spoken AI conversation partner with follow-up questions, working toward an interactive avatar
