@@ -69,6 +69,14 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def make_coach(args: argparse.Namespace) -> Coach:
+    if args.coach == "api":
+        from speech_coach.api_coach import ApiCoach  # load the API SDK only when asked for
+        print("Coach: Claude API (only redacted text leaves this machine)")
+        return ApiCoach()
+    return Coach(think=args.think)
+
+
 def main() -> None:
     args = parse_args()
     bank = load_questions()
@@ -76,13 +84,7 @@ def main() -> None:
     print("Loading speech model...")
     transcriber = Transcriber()  # fail fast: load the model before you speak
 
-    if args.coach == "api":
-        coach = ApiCoach()
-        print("Coach: Claude API (only redacted text leaves this machine)")
-    else:
-        coach = Coach(think=args.think)
-    # Load the coach in the background while you think and speak
-    threading.Thread(target=coach.warm_up, daemon=True).start()
+    coach = make_coach(args)
 
     try:
         question = ask_question(bank)
