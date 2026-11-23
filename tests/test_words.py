@@ -1,6 +1,6 @@
 import pytest
 
-from speech_coach.words import Word, drop_words_after, split_token, drop_loops
+from speech_coach.words import Word, drop_loops, drop_words_after, split_token
 
 
 @pytest.mark.parametrize(
@@ -65,4 +65,3 @@ def test_short_real_last_word_is_kept() -> None:
     words = [Word("no", 10.0, 10.2)]
     assert drop_words_after(words, 10.15) == words
 
-    

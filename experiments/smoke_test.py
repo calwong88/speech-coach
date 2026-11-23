@@ -15,7 +15,7 @@ if sys.platform == "win32":
         os.add_dll_directory(dll_dir)                                   # for Python's own loader
         os.environ["PATH"] = dll_dir + os.pathsep + os.environ["PATH"]  # for CTranslate2's loader
 
-from faster_whisper import WhisperModel # must come AFTER the DLL paths are added
+from faster_whisper import WhisperModel  # must come AFTER the DLL paths are added
 
 SAMPLE_RATE = 16_000 # Whisper works on 16 kHz audio
 SECONDS = 10

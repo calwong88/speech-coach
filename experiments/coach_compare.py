@@ -14,7 +14,9 @@ from speech_coach.cli import MIN_WORDS_FOR_COACHING, SPEAKER_CONTEXT, print_feed
 from speech_coach.coach import Coach, CoachFeedback, Problem
 from speech_coach.history import load_history
 from speech_coach.pipeline import analyze_recording
+from speech_coach.practice import MIN_WORDS_FOR_COACHING, SPEAKER_CONTEXT
 from speech_coach.redact import redact
+from speech_coach.report import format_feedback
 from speech_coach.transcriber import Transcriber
 
 RECORDINGS = Path("data/recordings")
@@ -119,7 +121,7 @@ def rate() -> None:
         for label, r in zip("ABC", group):
             print(f"\n=============== Feedback {label} ===============")
             problems = [Problem(field, "unverified") for field in r["unverified"]]
-            print_feedback(CoachFeedback(**r["feedback"]), problems)
+            print_feedback(format_feedback(CoachFeedback(**r["feedback"]), problems))
             r["rating"] = ask_rating(label)
 
     RATED.write_text(json.dumps(results, indent=2), encoding="utf-8")

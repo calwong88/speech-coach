@@ -21,7 +21,7 @@ def _add_cuda_dlls() -> None:
 
 _add_cuda_dlls()
 
-from faster_whisper import WhisperModel # noqa: E402 (must come after the DLL setup)
+from faster_whisper import WhisperModel  # noqa: E402 (must come after the DLL setup)
 
 
 class Transcriber:
