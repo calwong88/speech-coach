@@ -1,12 +1,15 @@
 """Practise in the browser. Run: python -m speech_coach.web, then use http://localhost:7860"""
 import shutil
 import threading
+from dataclasses import asdict, fields
 
 import gradio as gr
+import pandas as pd
 
 from speech_coach.cli import make_coach, parse_args
 from speech_coach.coach import Coach
 from speech_coach.compare import comparison_table
+from speech_coach.history import load_history
 from speech_coach.practice import (
     RECORDINGS,
     analyze_attempt,
@@ -14,6 +17,7 @@ from speech_coach.practice import (
     new_recording_path,
     save_attempt,
 )
+from speech_coach.progress import SessionPoint, session_points, trend_summary
 from speech_coach.questions import DEFAULT_QUESTION, load_questions, resolve
 from speech_coach.report import format_feedback, format_scorecard
 from speech_coach.transcriber import Transcriber
@@ -25,6 +29,12 @@ CATEGORIES = ["any", *sorted({q.category for q in BANK})]
 def build_app(transcriber: Transcriber, coach: Coach) -> gr.Blocks:
     def random_question(category: str) -> str:
         return resolve("r" if category == "any" else f"r {category}", BANK).text
+
+    def show_progress(category: str):
+        points = session_points(load_history(), None if category == "any" else category)
+        columns = [f.name for f in fields(SessionPoint)]
+        table = pd.DataFrame([asdict(p) for p in points], columns=columns)
+        return trend_summary(points), table, table, table
 
     def review(audio_path, question_text, previous, previous_question):
         if not audio_path:
@@ -64,23 +74,40 @@ def build_app(transcriber: Transcriber, coach: Coach) -> gr.Blocks:
 
     with gr.Blocks(title="Speech Coach", analytics_enabled=False) as app:
         gr.Markdown("# Speech Coach")
-        with gr.Row():
-            category = gr.Dropdown(CATEGORIES, value="any", label="Category")
-            random_button = gr.Button("Random question")
-        question_box = gr.Textbox(DEFAULT_QUESTION, label="Question (pick one, or type your own)")
-        audio = gr.Audio(sources=["microphone"], type="filepath", label="Your answer")
-        submit = gr.Button("Get feedback", variant="primary")
-        scorecard_box = gr.Textbox(label="Scorecard", lines=16)
-        coach_box = gr.Textbox(label="Coach", lines=14)
-        previous_stats = gr.State(None)
-        previous_question = gr.State("")
 
-        random_button.click(random_question, inputs=category, outputs=question_box)
-        submit.click(
-            review,
-            inputs=[audio, question_box, previous_stats, previous_question],
-            outputs=[scorecard_box, coach_box, previous_stats, previous_question],
-        )
+        with gr.Tab("Practice"):
+            with gr.Row():
+                category = gr.Dropdown(CATEGORIES, value="any", label="Category")
+                random_button = gr.Button("Random question")
+            question_box = gr.Textbox(DEFAULT_QUESTION, label="Question (pick one, or type your own)")
+            audio = gr.Audio(sources=["microphone"], type="filepath", label="Your answer")
+            submit = gr.Button("Get feedback", variant="primary")
+            scorecard_box = gr.Textbox(label="Scorecard", lines=16)
+            coach_box = gr.Textbox(label="Coach", lines=14)
+            previous_stats = gr.State(None)
+            previous_question = gr.State("")
+
+            random_button.click(random_question, inputs=category, outputs=question_box)
+            submit.click(
+                review,
+                inputs=[audio, question_box, previous_stats, previous_question],
+                outputs=[scorecard_box, coach_box, previous_stats, previous_question],
+            )
+
+        with gr.Tab("Progress"):
+            with gr.Row():
+                progress_category = gr.Dropdown(CATEGORIES, value="any", label="Category")
+                refresh_button = gr.Button("Refresh")
+            summary_box = gr.Textbox(label="Your progress", lines=6)
+            fillers_plot = gr.LinePlot(x="when", y="fillers_per_minute", title="Fillers per minute")
+            pausing_plot = gr.LinePlot(x="when", y="pause_pct", title="Time pausing (%)")
+            long_plot = gr.LinePlot(x="when", y="long_pauses", title="Long pauses (2 s or more)")
+
+            progress_outputs = [summary_box, fillers_plot, pausing_plot, long_plot]
+            refresh_button.click(show_progress, inputs=progress_category, outputs=progress_outputs)
+            progress_category.change(show_progress, inputs=progress_category, outputs=progress_outputs)
+
+        app.load(show_progress, inputs=progress_category, outputs=progress_outputs)
     return app
 
 
