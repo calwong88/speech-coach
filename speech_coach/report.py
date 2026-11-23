@@ -20,7 +20,7 @@ def format_scorecard(
         "",
         "=== Scorecard ===",
         f"Duration:         {m.duration_s:.1f} s" + (f" ({verdict}" if verdict else ""),
-        f"Pace:             {m.words_per_minute:.0f} words/win ({m.word_count} words)",
+        f"Pace:             {m.words_per_minute:.0f} words/min ({m.word_count} words)",
         f"Time pausing:     {pause_s:.1f} s of {m.duration_s:.1f} s ({pause_pct:.0%})",
         f"Speaking rate:    {speaking_rate(m.word_count, m.duration_s, pause_s):.0f} words/min (pauses removed)",
         f"Fillers:          {m.filler_count} ({m.fillers_per_minute:.1f}/min) {m.filler_breakdown}",
