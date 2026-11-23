@@ -58,3 +58,8 @@ def length_verdict(duration_s: float, target_s: tuple[int, int] | None) -> str:
     if duration_s > high:
         return f"longer than the {low}-{high} s target"
     return f"within the {low}-{high} s target"
+
+
+def coaching_context(question: Question, career_context: str) -> str:
+    """Everyday conversation isn't a job pitch, so it gets no career context."""
+    return "" if question.category == "conversation" else career_context

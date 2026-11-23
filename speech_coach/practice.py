@@ -7,7 +7,7 @@ from speech_coach.coach import Coach, CoachFeedback, Problem
 from speech_coach.compare import AttemptStats, attempt_stats
 from speech_coach.history import append_session, session_record
 from speech_coach.pipeline import Analysis, analyze_recording
-from speech_coach.questions import Question
+from speech_coach.questions import Question, coaching_context
 from speech_coach.transcriber import Transcriber
 
 RECORDINGS = Path("data/recordings")
@@ -67,7 +67,8 @@ def coach_attempt(attempt: Attempt, coach: Coach) -> None:
     a = attempt.analysis
     try:
         attempt.feedback, attempt.problems = coach.review(
-            attempt.question.text, a.transcript, a.metrics, a.pauses, SPEAKER_CONTEXT
+            attempt.question.text, a.transcript, a.metrics, a.pauses,
+            coaching_context(attempt.question, SPEAKER_CONTEXT)
         )
     except Exception as error:  # noqa: BLE001 (the coach is optional: report it, keep the session)
         attempt.notes.append(f"The coach couldn't give feedback this time: {error}")

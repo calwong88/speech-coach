@@ -5,6 +5,7 @@ import pytest
 from speech_coach.questions import (
     DEFAULT_QUESTION,
     Question,
+    coaching_context,
     find,
     length_verdict,
     load_questions,
@@ -72,3 +73,13 @@ def test_length_verdict(duration: float, expected: str) -> None:
 
 def test_no_target_means_no_verdict() -> None:
     assert length_verdict(102.0, None) == ""
+
+
+def test_conversation_questions_get_no_career_context() -> None:
+    q = Question("What did you do last weekend?", "conversation", None)
+    assert coaching_context(q, "targeting IAM roles") == ""
+
+
+def test_interview_questions_keep_career_context() -> None:
+    q = Question("Why IAM?", "custom", None)
+    assert coaching_context(q, "targeting IAM roles") == "targeting IAM roles"
