@@ -47,3 +47,6 @@ def test_trend_compares_first_and_latest_sessions() -> None:
 def test_trend_needs_at_least_two_sessions() -> None:
     assert "Not enough" in trend_summary(session_points([record("2026-11-01T20:00:00")]))
 
+
+def test_records_breaking_the_pause_invariant_are_left_out() -> None:
+    assert session_points([record("2026-11-01T00:10:00", pause_s=70.0)]) == []

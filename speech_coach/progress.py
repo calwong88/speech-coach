@@ -28,6 +28,8 @@ def session_points(records: list[dict], category: str | None = None) -> list[Ses
             continue
         coach = r.get("coach") or {}
         duration = m["duration_s"]
+        if r["pauses"]["total_s"] > duration:
+            continue  # recorded before the duration fix: its rates are known to be wrong
         points.append(SessionPoint(
             when=datetime.fromisoformat(r["timestamp"]),
             category=record_category,
