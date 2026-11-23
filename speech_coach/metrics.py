@@ -10,6 +10,7 @@ from itertools import pairwise
 from speech_coach.words import Word
 
 VOCAL_FILLERS = {"um", "uh"}
+MIN_WORDS_FOR_COACHING = 15  # below this there's nothing real to coach
 
 # Only *possible* fillers: "like" in "I'd like to" is a real word, so these are
 # reported separately and never counted in the filler score.

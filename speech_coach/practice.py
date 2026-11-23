@@ -6,12 +6,12 @@ from pathlib import Path
 from speech_coach.coach import Coach, CoachFeedback, Problem
 from speech_coach.compare import AttemptStats, attempt_stats
 from speech_coach.history import append_session, session_record
+from speech_coach.metrics import MIN_WORDS_FOR_COACHING
 from speech_coach.pipeline import Analysis, analyze_recording
 from speech_coach.questions import Question, coaching_context
 from speech_coach.transcriber import Transcriber
 
 RECORDINGS = Path("data/recordings")
-MIN_WORDS_FOR_COACHING = 15  # below this there's nothing real to coach
 SPEAKER_CONTEXT = (
     "Career changer from banking (accounts processing at BMO Private Wealth), "
     "targeting entry-level IAM and cybersecurity roles."
