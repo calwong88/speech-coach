@@ -6,7 +6,6 @@ from dataclasses import asdict, fields
 
 import gradio as gr
 import pandas as pd
-
 from dotenv import load_dotenv
 
 from speech_coach.auth import make_checker
