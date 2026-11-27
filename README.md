@@ -2,7 +2,7 @@
 
 A privacy-first speaking practice app. Answer a question out loud, and Speech Coach measures **how** you said it (filler words, pauses, pace, repetitions, length), then an AI coach gives feedback on **what** you said: your main point, your structure, and how you ended.
 
-By default, everything runs on your own machine and your voice never leaves it. An optional cloud coach (Claude) is available when you ask for it, and only redacted text is sent.
+By default, everything runs on your own computer and your voice never leaves your own devices. An optional cloud coach (Claude) is available when you ask for it, and only redacted text is sent.
 
 ## Why I built this
 
@@ -57,12 +57,14 @@ Duration             32 s      52 s
 Speaking rate     132 wpm   120 wpm
 ```
 
+The same practice loop runs in the browser (including from a phone), with a **Progress** tab that charts fillers, pauses and long pauses over time and compares your first sessions with your latest.
+
 ## How it works
 
 ```text
 microphone ─► recorder ─► transcriber ─► cleanup ─► metrics ─► scorecard ─► AI coach ─► checks ─► feedback
- (Enter to     (16 kHz)   (CrisperWhisper  (silence   (fillers,                (local by   (quotes,
-  start/stop)              on the GPU)      check,     pace,                    default;    length,
+ (terminal     (16 kHz)   (CrisperWhisper  (silence   (fillers,                (local by   (quotes,
+  or browser)              on the GPU)      check,     pace,                    default;    length,
                   │                         loop       repetitions)             Claude      garbled)
                   │                         filter)        ▲                    opt-in)        │
                   └──► pause detector (audio loudness) ────┘                                    ▼
@@ -71,26 +73,26 @@ microphone ─► recorder ─► transcriber ─► cleanup ─► metrics ─�
 
 | Module | Responsibility |
 |---|---|
-| `recorder.py` | Records until you press Enter; trims the keypress click |
+| `recorder.py` | Records from the terminal until you press Enter; trims the keypress click |
 | `transcriber.py` | Runs CrisperWhisper via faster-whisper; the only file that knows about the speech model |
 | `words.py` | The `Word` type, token cleanup, silence check and repetition-loop filter |
 | `pauses.py` | Pauses and the speech span, measured from audio loudness |
 | `metrics.py` | Deterministic speech metrics |
 | `annotate.py` | Marks fillers, repeated words and pauses inside the transcript |
 | `corrections.py` | Fixes known mishearings of my vocabulary in the displayed text |
-| `pipeline.py` | Turns a recording into an analysis; shared by the CLI and experiments |
+| `pipeline.py` | Turns a recording into an analysis; shared by the CLI, the web app and experiments |
+| `practice.py` | One attempt in three steps (analyze, coach, save); shared by the CLI and the web app |
 | `coach.py` | Prompt, response schema, deterministic checks on the coach's output, retry, and the local (Ollama) coach |
 | `api_coach.py` | The opt-in Claude API coach; reuses every check in `coach.py` |
 | `redact.py` | Replaces name and employer with placeholders before any text is sent |
 | `questions.py` + `questions.toml` | Question bank by category, with target lengths |
 | `compare.py` | Before/after comparison of two attempts |
 | `history.py` | One JSON line per session, versioned |
-| `cli.py` | The practice loop; connects the modules and displays results, with no logic of its own |
-| `practice.py` | One attempt in three steps (analyze, coach, save); shared by the CLI and the web app |
-| `report.py` | Turns results into display text for both interfaces |
-| `web.py` | The browser app: Practice and Progress tabs, behind a login |
 | `progress.py` | Progress over time from every history version; leaves out records that break the pause invariant |
+| `report.py` | Turns results into display text for both interfaces |
 | `auth.py` | Salted scrypt password hashing and constant-time login checks |
+| `cli.py` | The terminal practice loop; connects the modules and displays results, with no logic of its own |
+| `web.py` | The browser app: Practice and Progress tabs, behind a login |
 
 ## Design decisions
 
@@ -159,31 +161,34 @@ ANTHROPIC_API_KEY=your-key-here
 
 Then confirm Git ignores it: `git check-ignore -v .env` should print the matching `.gitignore` rule.
 
-**Notes:**
-- **GPU memory:** check with `ollama ps` that the coach runs at `100% GPU`. With `--think`, the speech model and qwen3:14b together use about 15 GB; if the coach spills onto the CPU, lower `NUM_CTX` in `coach.py`.
-- **RTX 50-series (Blackwell):** the speech model runs in `float16`; `int8` can crash on this architecture. On Windows, `transcriber.py` adds the pip-installed CUDA libraries to the DLL search path automatically.
-- **No audio recorded?** Check that the right microphone is the Windows default input, that desktop apps are allowed microphone access (Settings → Privacy & security → Microphone), and that no other app is holding the microphone. `python -m sounddevice` lists devices; the default input is marked `>`.
-- **Windows Smart App Control** can block some compiled packages, such as a helper used by the Anthropic SDK. The local coach still works, and the API test skips itself where the SDK can't load.
-
-**4. Optional: practise from your phone.** Create a login (the password is typed hidden and never stored):
+**4. Optional: practise in the browser and from your phone.** The web app requires a login. Create one (the password is typed hidden and never stored):
 
 ```powershell
 python -c "from getpass import getpass; from speech_coach.auth import hash_password; print(hash_password(getpass('New password: ')))"
 ```
 
-Add the result to `.env` as `SPEECH_COACH_PASSWORD_HASH=...`, along with `SPEECH_COACH_USER=yourname`. Install [Tailscale](https://tailscale.com) on the computer and your phone, then run `python -m speech_coach.web` and, in a second terminal, `tailscale serve 7860`. Open the address it prints on your phone.
+Add the result to `.env` as `SPEECH_COACH_PASSWORD_HASH=...`, along with `SPEECH_COACH_USER=yourname`. For phone access, install [Tailscale](https://tailscale.com) on the computer and your phone, run `python -m speech_coach.web`, and in a second terminal run `tailscale serve 7860`. Open the address it prints on your phone.
+
+**Notes:**
+- **GPU memory:** check with `ollama ps` that the coach runs at `100% GPU`. With `--think`, the speech model and qwen3:14b together use about 15 GB; if the coach spills onto the CPU, lower `NUM_CTX` in `coach.py`.
+- **RTX 50-series (Blackwell):** the speech model runs in `float16`; `int8` can crash on this architecture. On Windows, `transcriber.py` adds the pip-installed CUDA libraries to the DLL search path automatically.
+- **No audio recorded?** Check that the right microphone is the Windows default input, that desktop apps are allowed microphone access (Settings → Privacy & security → Microphone), and that no other app is holding the microphone. `python -m sounddevice` lists devices; the default input is marked `>`.
+- **Windows Smart App Control** can block some compiled packages, such as a helper used by the Anthropic SDK. The local coach still works, and the API test skips itself where the SDK can't load.
+- **Least privilege:** none of these commands need an administrator terminal.
 
 ## Usage
 
 ```powershell
-python -m speech_coach.cli               # practise with the local coach (thinking off)
+python -m speech_coach.cli               # practise in the terminal with the local coach (thinking off)
 python -m speech_coach.cli --think       # local coach with thinking: slower, sometimes more concrete
 python -m speech_coach.cli --coach api   # Claude coach: best rated; name and employer redacted
-python -m pytest                         # run the tests
 python -m speech_coach.web               # practise in the browser, with Practice and Progress tabs
+python -m pytest                         # run the tests
 ```
 
-At the question prompt: **Enter** for "Tell me about yourself", **`r`** for a random question, **`r explain`** (or `opener`, `behavioural`, `project`, `conversation`) for a random question from one category, or type your own. After each answer: **Enter** to try the same question again, **`n`** for a new question, **`q`** to quit.
+The web app takes the same `--coach` and `--think` options as the terminal version.
+
+At the terminal's question prompt: **Enter** for "Tell me about yourself", **`r`** for a random question, **`r explain`** (or `opener`, `behavioural`, `project`, `conversation`) for a random question from one category, or type your own. After each answer: **Enter** to try the same question again, **`n`** for a new question, **`q`** to quit. In the browser, pick a category and press **Random question**, or type your own.
 
 To add questions, edit [`speech_coach/questions.toml`](speech_coach/questions.toml). A test validates the file, so a typo shows up in `pytest`, not mid-practice.
 
@@ -216,12 +221,15 @@ speech-coach/
 ## Known limitations
 
 - **Run-to-run variation:** filler counts can differ by about ±1 between transcriptions of the same audio. Compare trends across sessions, not single takes.
+- **Different microphones give slightly different numbers:** a phone records more room sound than a headset, which can shift pauses and fillers. Compare trends, not single sessions across devices.
 - **Approximate positions:** word timestamps are approximate, so pause markers in the annotated transcript show roughly where a pause happened.
 - **Vocabulary table:** corrections only fix mishearings that have already been seen and added.
 - **Redaction** catches known spellings; a badly misheard name can slip through. Corrections run first to reduce this.
 - **The coaches aren't perfect.** The local coach sometimes contradicts itself (praising and criticizing the same sentence) or adds wording you didn't say to a rewrite. The checks catch what can be checked; for the rest, only use a rewrite if it's true for you.
+- **The local coach doesn't check technical accuracy.** It judges structure and clarity, so on "explain" questions it can praise an answer that gets a concept wrong (for example, describing single sign-on as one password for every site). Use `--coach api` for technical questions until this is addressed (see the roadmap).
 - **Small comparisons:** the model comparison used five sessions per run. The ranking held across two runs, but it is a guide, not a benchmark.
 - **`--think`** is slower, and on long reasoning it can still run out of room. When that happens, the session is still scored and saved.
+- **Phone practice needs the computer on,** with the web app and `tailscale serve` running, because all processing happens on its GPU.
 - **Platform:** tested only on Windows with an NVIDIA GPU.
 
 ## Roadmap
@@ -230,6 +238,7 @@ speech-coach/
 - [x] **Phase 2, AI coach:** verified feedback with main point and ending, practice loop with attempt comparison, annotated transcript, question bank with target lengths, versioned history
 - [x] **Coach model comparison:** local models vs. Claude on the same saved sessions, rated blind; opt-in Claude coach with redaction
 - [ ] **More coach candidates:** test gpt-oss:20b as a local coach in the blind comparison (low reasoning effort; check it fits in GPU memory alongside the speech model), and add the OpenAI API as a second opt-in cloud coach, with redaction moved into a shared base class so every cloud coach redacts automatically
+- [ ] **Technical accuracy for "explain" answers:** a prompt rule for the explain category asking the coach to flag technically inaccurate statements, tested in the blind comparison; until then, use `--coach api` for technical questions
 - [x] **Phase 3, web app:** browser practice and progress charts, usable from a phone over Tailscale, behind a login
 - [ ] **Phase 3d, single sign-on:** OIDC login with an Okta developer tenant, with MFA
 - [ ] **Phase 4, habit system:** daily practice prompts as phone notifications, streaks
@@ -242,5 +251,7 @@ speech-coach/
 - [faster-whisper](https://github.com/SYSTRAN/faster-whisper): speech model inference, including Silero voice activity detection.
 - [Ollama](https://ollama.com) and [Qwen](https://github.com/QwenLM): the local coaches.
 - [Claude](https://platform.claude.com/docs) by Anthropic: the optional cloud coach, via the official Python SDK.
+- [Gradio](https://www.gradio.app): the browser interface.
+- [Tailscale](https://tailscale.com): private HTTPS access from my own devices.
 - [pydantic](https://docs.pydantic.dev): validation of the coach's responses.
 - This project's own code is released under the MIT Licence (see [`LICENSE`](LICENSE)).
