@@ -86,6 +86,11 @@ microphone ─► recorder ─► transcriber ─► cleanup ─► metrics ─�
 | `compare.py` | Before/after comparison of two attempts |
 | `history.py` | One JSON line per session, versioned |
 | `cli.py` | The practice loop; connects the modules and displays results, with no logic of its own |
+| `practice.py` | One attempt in three steps (analyze, coach, save); shared by the CLI and the web app |
+| `report.py` | Turns results into display text for both interfaces |
+| `web.py` | The browser app: Practice and Progress tabs, behind a login |
+| `progress.py` | Progress over time from every history version; leaves out records that break the pause invariant |
+| `auth.py` | Salted scrypt password hashing and constant-time login checks |
 
 ## Design decisions
 
@@ -119,6 +124,8 @@ Each decision below was tested, not assumed. The experiments behind them are in 
 14. **Local by default, cloud only when asked.** Recordings and history live in `data/`, which is excluded from Git. The Claude coach runs only with `--coach api`, and the app says so at startup.
 15. **Personal details are redacted before anything leaves the machine, and a test proves it.** Name and employer are replaced with placeholders, after vocabulary corrections have fixed known mishearings. A spy coach records everything that would be sent to the API and asserts that neither appears, including in retries. The API key lives in a git-ignored `.env`, with one key per device so each can be revoked separately.
 16. **Versioned history.** Each session is one line of JSON in `data/history.jsonl`, with a `schema_version` and the coach's `prompt_version`, so sessions recorded under different rules can always be told apart.
+17. **Phone access without exposing the app.** The app listens only on this computer (`127.0.0.1`). Tailscale Serve forwards to it over HTTPS within a private network of my own devices (browsers only allow the microphone on secure pages), so nothing is reachable from the internet or the local Wi-Fi. It uses `tailscale serve`, never `funnel`, which would publish it to the internet.
+18. **A real login, not just a password check.** One user; the password is stored only as a salted scrypt hash in `.env` and compared in constant time; username and password are always both checked; and the app refuses to start without a login configured (fail closed). Together with Tailscale, that's two independent layers of access control.
 
 ## Setup
 
@@ -158,6 +165,14 @@ Then confirm Git ignores it: `git check-ignore -v .env` should print the matchin
 - **No audio recorded?** Check that the right microphone is the Windows default input, that desktop apps are allowed microphone access (Settings → Privacy & security → Microphone), and that no other app is holding the microphone. `python -m sounddevice` lists devices; the default input is marked `>`.
 - **Windows Smart App Control** can block some compiled packages, such as a helper used by the Anthropic SDK. The local coach still works, and the API test skips itself where the SDK can't load.
 
+**4. Optional: practise from your phone.** Create a login (the password is typed hidden and never stored):
+
+```powershell
+python -c "from getpass import getpass; from speech_coach.auth import hash_password; print(hash_password(getpass('New password: ')))"
+```
+
+Add the result to `.env` as `SPEECH_COACH_PASSWORD_HASH=...`, along with `SPEECH_COACH_USER=yourname`. Install [Tailscale](https://tailscale.com) on the computer and your phone, then run `python -m speech_coach.web` and, in a second terminal, `tailscale serve 7860`. Open the address it prints on your phone.
+
 ## Usage
 
 ```powershell
@@ -165,6 +180,7 @@ python -m speech_coach.cli               # practise with the local coach (thinki
 python -m speech_coach.cli --think       # local coach with thinking: slower, sometimes more concrete
 python -m speech_coach.cli --coach api   # Claude coach: best rated; name and employer redacted
 python -m pytest                         # run the tests
+python -m speech_coach.web               # practise in the browser, with Practice and Progress tabs
 ```
 
 At the question prompt: **Enter** for "Tell me about yourself", **`r`** for a random question, **`r explain`** (or `opener`, `behavioural`, `project`, `conversation`) for a random question from one category, or type your own. After each answer: **Enter** to try the same question again, **`n`** for a new question, **`q`** to quit.
@@ -181,6 +197,7 @@ The tests run in a few seconds, with no GPU, model or network needed. They inclu
 - **A privacy test:** a spy coach proves that name and employer never reach the API.
 - **A retry test:** a failing first answer proves the retry tells the model exactly what was wrong.
 - **A data test:** the question bank file is validated like code.
+- **A login test:** salted hashes differ for the same password, wrong users or passwords are rejected, and a malformed stored hash fails closed.
 
 The AI coach itself is evaluated with experiments in `experiments/`, not unit tests, because a language model's output isn't deterministic enough to assert on. Everything deterministic around it is unit-tested.
 
@@ -213,7 +230,8 @@ speech-coach/
 - [x] **Phase 2, AI coach:** verified feedback with main point and ending, practice loop with attempt comparison, annotated transcript, question bank with target lengths, versioned history
 - [x] **Coach model comparison:** local models vs. Claude on the same saved sessions, rated blind; opt-in Claude coach with redaction
 - [ ] **More coach candidates:** test gpt-oss:20b as a local coach in the blind comparison (low reasoning effort; check it fits in GPU memory alongside the speech model), and add the OpenAI API as a second opt-in cloud coach, with redaction moved into a shared base class so every cloud coach redacts automatically
-- [ ] **Phase 3, web app:** browser UI usable from a phone, progress charts from the history
+- [x] **Phase 3, web app:** browser practice and progress charts, usable from a phone over Tailscale, behind a login
+- [ ] **Phase 3d, single sign-on:** OIDC login with an Okta developer tenant, with MFA
 - [ ] **Phase 4, habit system:** daily practice prompts as phone notifications, streaks
 - [ ] **Phase 5, conversation mode:** a spoken AI conversation partner with follow-up questions, working toward an interactive avatar
 - [ ] **Phase 6, languages:** multilingual practice with per-language fillers and read-aloud drills
