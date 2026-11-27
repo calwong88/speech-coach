@@ -1,4 +1,5 @@
 """Practise in the browser. Run: python -m speech_coach.web, then use http://localhost:7860"""
+import os
 import shutil
 import threading
 from dataclasses import asdict, fields
@@ -6,6 +7,9 @@ from dataclasses import asdict, fields
 import gradio as gr
 import pandas as pd
 
+from dotenv import load_dotenv
+
+from speech_coach.auth import make_checker
 from speech_coach.cli import make_coach, parse_args
 from speech_coach.coach import Coach
 from speech_coach.compare import comparison_table
@@ -113,11 +117,21 @@ def build_app(transcriber: Transcriber, coach: Coach) -> gr.Blocks:
 
 def main() -> None:
     args = parse_args()
+    load_dotenv()
+    username = os.environ.get("SPEECH_COACH_USER")
+    password_hash = os.environ.get("SPEECH_COACH_PASSWORD_HASH")
+    if not (username and password_hash):
+        raise SystemExit("Login not configured: set SPEECH_COACH_USER and SPEECH_COACH_PASSWORD_HASH in .env")
+
     print("Loading speech model...")
     transcriber = Transcriber()
     coach = make_coach(args)
     threading.Thread(target=coach.warm_up, daemon=True).start()
-    build_app(transcriber, coach).launch(server_name="127.0.0.1", inbrowser=True)
+    build_app(transcriber, coach).launch(
+        server_name="127.0.0.1",  # only this computer; Tailscale forwards to it (Part B)
+        auth=make_checker(username, password_hash),
+        inbrowser=True,
+    )
 
 
 if __name__ == "__main__":
