@@ -9,8 +9,8 @@ import pandas as pd
 from dotenv import load_dotenv
 
 from speech_coach.auth import make_checker
-from speech_coach.cli import make_coach, parse_args
-from speech_coach.coach import Coach
+from speech_coach.cli import parse_args
+from speech_coach.coach import Coach, CoachError
 from speech_coach.compare import comparison_table
 from speech_coach.history import load_history
 from speech_coach.practice import (
@@ -27,9 +27,22 @@ from speech_coach.transcriber import Transcriber
 
 BANK = load_questions()
 CATEGORIES = ["any", *sorted({q.category for q in BANK})]
+LOCAL = "Local (private)"
+CLAUDE = "Claude API (name and employer redacted)"
 
 
-def build_app(transcriber: Transcriber, coach: Coach) -> gr.Blocks:
+def load_coaches(args) -> dict[str, Coach]:
+    """The local coach always; Claude only if its key and SDK are available (fail closed)."""
+    coaches = {LOCAL: Coach(think=args.think)}
+    try:
+        from speech_coach.api_coach import ApiCoach  # load the API SDK only if it can be used
+        coaches[CLAUDE] = ApiCoach()
+    except (ImportError, CoachError) as error:
+        print(f"(Claude coach not available: {error})")
+    return coaches
+
+
+def build_app(transcriber: Transcriber, coaches: dict[str, Coach], default_coach: str) -> gr.Blocks:
     def random_question(category: str) -> str:
         return resolve("r" if category == "any" else f"r {category}", BANK).text
 
@@ -39,10 +52,11 @@ def build_app(transcriber: Transcriber, coach: Coach) -> gr.Blocks:
         table = pd.DataFrame([asdict(p) for p in points], columns=columns)
         return trend_summary(points), table, table, table
 
-    def review(audio_path, question_text, previous, previous_question):
+    def review(audio_path, question_text, coach_label, previous, previous_question):
         if not audio_path:
             yield "Record an answer first.", "", previous, previous_question
             return
+        coach = coaches[coach_label]
         question = resolve(question_text, BANK)
         if question.text != previous_question:
             previous = None  # a new question: nothing to compare against
@@ -59,14 +73,14 @@ def build_app(transcriber: Transcriber, coach: Coach) -> gr.Blocks:
             f"Question ({question.category}): {question.text}\n\n{notes}"
             + format_scorecard(a.annotated, a.metrics, a.pauses, question.target_s)
         )
-        waiting = "Coach is reviewing your answer..." if attempt.coachable else ""
+        waiting = f"{coach_label} is reviewing your answer..." if attempt.coachable else ""
         yield scorecard, waiting, previous, previous_question
 
         # Steps 2 and 3: coach, then save.
         shown = len(attempt.notes)
         coach_attempt(attempt, coach)
         save_attempt(attempt, coach)
-        parts = [f"({note})" for note in attempt.notes[shown:]]
+        parts = [f"Coach: {coach_label}"] + [f"({note})" for note in attempt.notes[shown:]]
         if attempt.feedback:
             parts.append(format_feedback(attempt.feedback, attempt.problems))
         stats = attempt.stats
@@ -83,6 +97,7 @@ def build_app(transcriber: Transcriber, coach: Coach) -> gr.Blocks:
                 category = gr.Dropdown(CATEGORIES, value="any", label="Category")
                 random_button = gr.Button("Random question")
             question_box = gr.Textbox(DEFAULT_QUESTION, label="Question (pick one, or type your own)")
+            coach_choice = gr.Radio(list(coaches), value=default_coach, label="Coach")
             audio = gr.Audio(sources=["microphone"], type="filepath", label="Your answer")
             submit = gr.Button("Get feedback", variant="primary")
             scorecard_box = gr.Textbox(label="Scorecard", lines=16)
@@ -93,7 +108,7 @@ def build_app(transcriber: Transcriber, coach: Coach) -> gr.Blocks:
             random_button.click(random_question, inputs=category, outputs=question_box)
             submit.click(
                 review,
-                inputs=[audio, question_box, previous_stats, previous_question],
+                inputs=[audio, question_box, coach_choice, previous_stats, previous_question],
                 outputs=[scorecard_box, coach_box, previous_stats, previous_question],
             )
 
@@ -124,9 +139,10 @@ def main() -> None:
 
     print("Loading speech model...")
     transcriber = Transcriber()
-    coach = make_coach(args)
-    threading.Thread(target=coach.warm_up, daemon=True).start()
-    build_app(transcriber, coach).launch(
+    coaches = load_coaches(args)
+    default = CLAUDE if args.coach == "api" and CLAUDE in coaches else LOCAL
+    threading.Thread(target=coaches[LOCAL].warm_up, daemon=True).start()
+    build_app(transcriber, coaches, default).launch(
         server_name="127.0.0.1",  # only this computer; Tailscale forwards to it (Part B)
         auth=make_checker(username, password_hash),
         inbrowser=True,

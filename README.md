@@ -123,7 +123,7 @@ Each decision below was tested, not assumed. The experiments behind them are in 
 
 ### Data and privacy
 
-14. **Local by default, cloud only when asked.** Recordings and history live in `data/`, which is excluded from Git. The Claude coach runs only with `--coach api`, and the app says so at startup.
+14. **Local by default, cloud only when asked.** Recordings and history live in `data/`, which is excluded from Git. The Claude coach runs only when chosen: with `--coach api` in the terminal, or per answer in the browser, where the selected coach is always visible and the feedback says which one wrote it. If no API key is configured, or the SDK can't load, the Claude option isn't offered (fail closed).
 15. **Personal details are redacted before anything leaves the machine, and a test proves it.** Name and employer are replaced with placeholders, after vocabulary corrections have fixed known mishearings. A spy coach records everything that would be sent to the API and asserts that neither appears, including in retries. The API key lives in a git-ignored `.env`, with one key per device so each can be revoked separately.
 16. **Versioned history.** Each session is one line of JSON in `data/history.jsonl`, with a `schema_version` and the coach's `prompt_version`, so sessions recorded under different rules can always be told apart.
 17. **Phone access without exposing the app.** The app listens only on this computer (`127.0.0.1`). Tailscale Serve forwards to it over HTTPS within a private network of my own devices (browsers only allow the microphone on secure pages), so nothing is reachable from the internet or the local Wi-Fi. It uses `tailscale serve`, never `funnel`, which would publish it to the internet.
@@ -188,7 +188,7 @@ python -m pytest                         # run the tests
 
 The web app takes the same `--coach` and `--think` options as the terminal version.
 
-At the terminal's question prompt: **Enter** for "Tell me about yourself", **`r`** for a random question, **`r explain`** (or `opener`, `behavioural`, `project`, `conversation`) for a random question from one category, or type your own. After each answer: **Enter** to try the same question again, **`n`** for a new question, **`q`** to quit. In the browser, pick a category and press **Random question**, or type your own.
+At the terminal's question prompt: **Enter** for "Tell me about yourself", **`r`** for a random question, **`r explain`** (or `opener`, `behavioural`, `project`, `conversation`) for a random question from one category, or type your own. After each answer: **Enter** to try the same question again, **`n`** for a new question, **`q`** to quit. In the browser, pick a category and press **Random question**, or type your own, and choose the coach for each answer: **Local (private)** by default, or **Claude** for the strongest feedback (name and employer redacted).
 
 To add questions, edit [`speech_coach/questions.toml`](speech_coach/questions.toml). A test validates the file, so a typo shows up in `pytest`, not mid-practice.
 
