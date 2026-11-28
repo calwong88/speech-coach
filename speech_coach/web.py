@@ -35,7 +35,9 @@ def load_coaches(args) -> dict[str, Coach]:
     """The local coach always; Claude only if its key and SDK are available (fail closed)."""
     coaches = {LOCAL: Coach(think=args.think)}
     try:
-        from speech_coach.api_coach import ApiCoach  # load the API SDK only if it can be used
+        from speech_coach.api_coach import (
+            ApiCoach,  # load the API SDK only if it can be used
+        )
         coaches[CLAUDE] = ApiCoach()
     except (ImportError, CoachError) as error:
         print(f"(Claude coach not available: {error})")
